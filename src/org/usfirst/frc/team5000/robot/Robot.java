@@ -24,10 +24,11 @@ public class Robot extends IterativeRobot {
     SendableChooser chooser;
     
     public static TalonSRX driveCimLF, driveCimLR, driveCimRF, driveCimRR;
-    public static Talon rightShooter, leftShooter;
-    public static Joystick driveJoystick, shooterJoystick;
-    public static HHJoystickButtons driveJoystickButtons, shooterJoystickButtons;
-    public static RobotDrive driveTrain, shooterTrain;
+    public static TalonSRX rightDoor, leftDoor;
+    public static TalonSRX winch;
+    public static Joystick driveJoystick, doorJoystick;
+    public static HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
+    public static RobotDrive driveTrain, doorTrain;
     
     static final int PICKUP_BALL_BUTTON = 1;
 	
@@ -42,12 +43,12 @@ public class Robot extends IterativeRobot {
         SmartDashboard.putData("Auto choices", chooser);
         
         driveJoystick = new Joystick(1);
-        shooterJoystick = new Joystick(2);
+        doorJoystick = new Joystick(2);
         driveJoystickButtons = new HHJoystickButtons( driveJoystick, 10 );
-        shooterJoystickButtons = new HHJoystickButtons( shooterJoystick, 10 );
+        doorJoystickButtons = new HHJoystickButtons( doorJoystick, 10 );
         
         driveCimLF = new TalonSRX(0);
-        driveCimLR = new TalonSRX (1);
+        driveCimLR = new TalonSRX(1);
         driveCimRF = new TalonSRX(2);
         driveCimRR = new TalonSRX(3);
         
@@ -56,10 +57,12 @@ public class Robot extends IterativeRobot {
         
         driveTrain = new RobotDrive(driveCimLF,driveCimLR,driveCimRF,driveCimRR);
         
-        rightShooter = new Talon(4);
-        leftShooter = new Talon(5);
+        rightDoor = new TalonSRX(4);
+        leftDoor = new TalonSRX(5);
         
-        shooterTrain = new RobotDrive(leftShooter, rightShooter);
+        doorTrain = new RobotDrive(leftDoor, rightDoor);
+        
+        winch = new TalonSRX(6);
     }
     
     /**
@@ -98,14 +101,11 @@ public class Robot extends IterativeRobot {
     public void teleopPeriodic() {
     	
     	driveJoystickButtons.updateState();
-    	shooterJoystickButtons.updateState();
-    	driveTrain.arcadeDrive(driveJoystick);
-
-        if( shooterJoystickButtons.getState( PICKUP_BALL_BUTTON ) == HHJoystickButtonState.Pressed ) {
-            shooterTrain.drive( -0.7, 0 );
-        } else {
-            shooterTrain.stopMotor();
-        }
+    	doorJoystickButtons.updateState();
+    	
+    	drivePeriodic();
+    	doorPeriodic();
+    	winchPeriodic();
     }
     
     /**
@@ -115,4 +115,20 @@ public class Robot extends IterativeRobot {
     
     }
     
+	void drivePeriodic() {
+		driveTrain.arcadeDrive(driveJoystick);
+	}
+	
+	void doorPeriodic() {
+		if( doorJoystickButtons.getState( PICKUP_BALL_BUTTON ) == HHJoystickButtonState.Pressed ) {
+			doorTrain.drive( -0.7, 0 );
+		} else {
+			doorTrain.stopMotor();
+		}
+	}
+	
+	void winchPeriodic() {
+	}
+	
+	}
 }

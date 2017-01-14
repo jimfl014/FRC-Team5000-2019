@@ -130,5 +130,4 @@ public class Robot extends IterativeRobot {
 	void winchPeriodic() {
 	}
 	
-	}
 }

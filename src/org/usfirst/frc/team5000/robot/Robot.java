@@ -30,6 +30,7 @@ public class Robot extends IterativeRobot {
     public static HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
     public static RobotDrive driveTrain, doorTrain;
     
+    static final boolean USE_MECANUM_DRIVE = false;
     static final int PICKUP_BALL_BUTTON = 1;
 	
     /**
@@ -116,7 +117,11 @@ public class Robot extends IterativeRobot {
     }
     
 	void drivePeriodic() {
-		driveTrain.arcadeDrive(driveJoystick);
+		if (USE_MECANUM_DRIVE) {
+			driveTrain.mecanumDrive_Cartesian(driveJoystick.getX(), driveJoystick.getY(), driveJoystick.getTwist(), 0);	
+		} else {
+			driveTrain.arcadeDrive(driveJoystick);
+		}
 	}
 	
 	void doorPeriodic() {

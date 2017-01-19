@@ -19,3 +19,12 @@ Winch
 
 Cameras
 	-front/back, 360 degree turn w/ buttons
+
+Notes about the Winch
+-Code will control the motor
+-By default it won't be doing anything
+-Pressing one of the joystick buttons will have it move forward
+-Pressing a different button will have it move backwards
+-Pressing the button again will have it stop
+-We might be using a sensor to stop it automatically, but it hasn't been integrated yet
+-We want to put variables on the dashboard that allow us to independently control the speed of each direction

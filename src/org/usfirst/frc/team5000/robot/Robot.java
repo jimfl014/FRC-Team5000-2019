@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TalonSRX;
+import com.ctre.*;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -24,12 +25,13 @@ public class Robot extends IterativeRobot {
     SendableChooser chooser;
     
     public static TalonSRX driveCimLF, driveCimLR, driveCimRF, driveCimRR;
-    public static TalonSRX rightDoor, leftDoor;
+    public static Talon door;
     public static TalonSRX winch;
     public static Joystick driveJoystick, doorJoystick;
     public static HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
     public static RobotDrive driveTrain, doorTrain;
     
+    static final boolean USE_MECANUM_DRIVE = true;
     static final int PICKUP_BALL_BUTTON = 1;
 	
     /**
@@ -57,12 +59,9 @@ public class Robot extends IterativeRobot {
         
         driveTrain = new RobotDrive(driveCimLF,driveCimLR,driveCimRF,driveCimRR);
         
-        rightDoor = new TalonSRX(4);
-        leftDoor = new TalonSRX(5);
+        door = new Talon(0);
         
-        doorTrain = new RobotDrive(leftDoor, rightDoor);
-        
-        winch = new TalonSRX(6);
+        winch = new TalonSRX(4);
     }
     
     /**
@@ -116,12 +115,16 @@ public class Robot extends IterativeRobot {
     }
     
 	void drivePeriodic() {
-		driveTrain.arcadeDrive(driveJoystick);
+		if (USE_MECANUM_DRIVE) {
+			driveTrain.mecanumDrive_Cartesian(driveJoystick.getX(), driveJoystick.getY(), driveJoystick.getTwist(), 0);	
+		} else {
+			driveTrain.arcadeDrive(driveJoystick);
+		}
 	}
 	
 	void doorPeriodic() {
 		if( doorJoystickButtons.getState( PICKUP_BALL_BUTTON ) == HHJoystickButtonState.Pressed ) {
-			doorTrain.drive( -0.7, 0 );
+			door.set( 0.7);
 		} else {
 			doorTrain.stopMotor();
 		}
@@ -130,5 +133,4 @@ public class Robot extends IterativeRobot {
 	void winchPeriodic() {
 	}
 	
-	}
 }

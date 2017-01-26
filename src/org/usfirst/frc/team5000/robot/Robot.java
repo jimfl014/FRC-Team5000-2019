@@ -30,7 +30,7 @@ public class Robot extends IterativeRobot {
     public static CANTalon winch;
     public static Joystick driveJoystick, doorJoystick;
     public static HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
-    public static RobotDrive driveTrain, doorTrain;
+    public static RobotDrive driveTrain;
     MotorState winchState=MotorState.Stopped;
     double Forwardwinchspeed = 0.7;
     double Reversewinchspeed = -0.6;
@@ -45,16 +45,14 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void robotInit() {
-		// chooser.addObject("My Auto", new MyAutoCommand());
-		SmartDashboard.putData("Auto mode", chooser);
-		
+
 		chooser = new SendableChooser();
         chooser.addDefault("Default Auto", defaultAuto);
         chooser.addObject("My Auto", customAuto);
         SmartDashboard.putData("Auto choices", chooser);
         
-        driveJoystick = new Joystick(1);
-        doorJoystick = new Joystick(2);
+        driveJoystick = new Joystick(0);
+        doorJoystick = new Joystick(1);
         driveJoystickButtons = new HHJoystickButtons( driveJoystick, 10 );
         doorJoystickButtons = new HHJoystickButtons( doorJoystick, 10 );
         
@@ -173,7 +171,7 @@ public class Robot extends IterativeRobot {
 		if (doorJoystickButtons.getState(PICKUP_BALL_BUTTON) == HHJoystickButtonState.Pressed) {
 			door.set(0.7);
 		} else {
-			doorTrain.stopMotor();
+			door.stopMotor();
 		}
 	}
 

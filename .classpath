@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="build/jars/NetworkTables.jar"/>
-	<classpathentry kind="lib" path="build/jars/WPILib.jar"/>
-	<classpathentry kind="lib" path="dist/FRCUserProgram.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry exported="true" kind="lib" path="build/jars/NetworkTables.jar"/>
+	<classpathentry exported="true" kind="lib" path="build/jars/WPILib.jar"/>
+	<classpathentry exported="true" kind="lib" path="dist/FRCUserProgram.jar"/>
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry exported="true" kind="lib" path="/Users/gabrielalexander/Downloads/CTRE_FRCLibs_NON-WINDOWS_v4.4.1.9/java/lib/CTRLib.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

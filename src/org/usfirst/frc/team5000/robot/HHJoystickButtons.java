@@ -17,7 +17,7 @@ public class HHJoystickButtons {
 
         for( int i = 0; i < numberOfButtons; i += 1 ) {
 
-            this.joystickButtons[ i ] = new HHJoystickButton( joystick, i );
+            this.joystickButtons[ i ] = new HHJoystickButton( joystick, i + 1 );
         }
     }
 

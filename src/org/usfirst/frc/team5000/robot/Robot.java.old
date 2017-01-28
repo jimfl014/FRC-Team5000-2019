@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TalonSRX;
+import com.ctre.CANTalon;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -18,16 +19,25 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * directory.
  */
 public class Robot extends IterativeRobot {
+	enum MotorState {Stopped, Forward, Reverse};
     final String defaultAuto = "Default";
     final String customAuto = "My Auto";
     String autoSelected;
     SendableChooser chooser;
     
     public static TalonSRX driveCimLF, driveCimLR, driveCimRF, driveCimRR;
-    public static Talon rightShooter, leftShooter;
-    public static Joystick driveJoystick, shooterJoystick;
-    public static HHJoystickButtons driveJoystickButtons, shooterJoystickButtons;
-    public static RobotDrive driveTrain;
+    public static Talon door;
+    public static CANTalon winch;
+    public static Joystick driveJoystick, doorJoystick;
+    public static HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
+    public static RobotDrive driveTrain, doorTrain;
+    MotorState winchState=MotorState.Stopped;
+    double Forwardwinchspeed = 0.7;
+    double Reversewinchspeed = -0.6;
+    static final boolean USE_MECANUM_DRIVE = true;
+    static final int PICKUP_BALL_BUTTON = 1;
+    static final int WINCH_FORWARD_BUTTON = 2;
+    static final int WINCH_REVERSE_BUTTON = 3;
 	
     /**
      * This function is run when the robot is first started up and should be
@@ -40,12 +50,12 @@ public class Robot extends IterativeRobot {
         SmartDashboard.putData("Auto choices", chooser);
         
         driveJoystick = new Joystick(1);
-        shooterJoystick = new Joystick(2);
+        doorJoystick = new Joystick(2);
         driveJoystickButtons = new HHJoystickButtons( driveJoystick, 10 );
-        shooterJoystickButtons = new HHJoystickButtons( shooterJoystick, 10 );
+        doorJoystickButtons = new HHJoystickButtons( doorJoystick, 10 );
         
         driveCimLF = new TalonSRX(0);
-        driveCimLR = new TalonSRX (1);
+        driveCimLR = new TalonSRX(1);
         driveCimRF = new TalonSRX(2);
         driveCimRR = new TalonSRX(3);
         
@@ -54,21 +64,20 @@ public class Robot extends IterativeRobot {
         
         driveTrain = new RobotDrive(driveCimLF,driveCimLR,driveCimRF,driveCimRR);
         
-        rightShooter = new Talon(4);
-        leftShooter = new Talon(5);
+        door = new Talon(0);
         
-        
+        winch = new CANTalon(4);
     }
     
-	/**
-	 * This autonomous (along with the chooser code above) shows how to select between different autonomous modes
-	 * using the dashboard. The sendable chooser code works with the Java SmartDashboard. If you prefer the LabVIEW
-	 * Dashboard, remove all of the chooser code and uncomment the getString line to get the auto name from the text box
-	 * below the Gyro
-	 *
-	 * You can add additional auto modes by adding additional comparisons to the switch structure below with additional strings.
-	 * If using the SendableChooser make sure to add them to the chooser code above as well.
-	 */
+    /**
+     * This autonomous (along with the chooser code above) shows how to select between different autonomous modes
+     * using the dashboard. The sendable chooser code works with the Java SmartDashboard. If you prefer the LabVIEW
+     * Dashboard, remove all of the chooser code and uncomment the getString line to get the auto name from the text box
+     * below the Gyro
+     *
+     * You can add additional auto modes by adding additional comparisons to the switch structure below with additional strings.
+     * If using the SendableChooser make sure to add them to the chooser code above as well.
+     */
     public void autonomousInit() {
     	autoSelected = (String) chooser.getSelected();
 //		autoSelected = SmartDashboard.getString("Auto Selector", defaultAuto);
@@ -95,9 +104,12 @@ public class Robot extends IterativeRobot {
      */
     public void teleopPeriodic() {
     	
-    	driveTrain.arcadeDrive(driveJoystick);
     	driveJoystickButtons.updateState();
-    	shooterJoystickButtons.updateState();
+    	doorJoystickButtons.updateState();
+    	
+    	drivePeriodic();
+    	doorPeriodic();
+    	winchPeriodic();
     }
     
     /**
@@ -107,4 +119,39 @@ public class Robot extends IterativeRobot {
     
     }
     
+	void drivePeriodic() {
+		if (USE_MECANUM_DRIVE) {
+			driveTrain.mecanumDrive_Cartesian(driveJoystick.getX(), driveJoystick.getY(), driveJoystick.getTwist(), 0);	
+		} else {
+			driveTrain.arcadeDrive(driveJoystick);
+		}
+	}
+	
+	void doorPeriodic() {
+		if( doorJoystickButtons.getState( PICKUP_BALL_BUTTON ) == HHJoystickButtonState.Pressed ) {
+			door.set( 0.7);
+		} else {
+			doorTrain.stopMotor();
+		}
+	}
+	
+	void winchPeriodic() {
+		if(doorJoystickButtons.isPressed( WINCH_FORWARD_BUTTON )){
+			if (winchState==MotorState.Stopped){
+				winchState=MotorState.Forward;
+			}
+				else if (winchState==MotorState.Forward){
+					winchState=MotorState.Stopped;
+				}
+			}
+		if(doorJoystickButtons.isPressed( WINCH_REVERSE_BUTTON )){
+			if (winchState==MotorState.Stopped){
+				winchState=MotorState.Reverse;
+			}
+				else if (winchState==MotorState.Reverse){
+					winchState=MotorState.Stopped;
+				}
+			}
+	}
+	
 }

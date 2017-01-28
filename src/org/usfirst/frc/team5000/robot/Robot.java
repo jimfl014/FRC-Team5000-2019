@@ -4,6 +4,7 @@ package org.usfirst.frc.team5000.robot;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.PowerDistributionPanel;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Spark;
 import com.ctre.CANTalon;
@@ -39,9 +40,10 @@ public class Robot extends IterativeRobot {
     static final boolean USE_MECANUM_DRIVE = true;
     static final int OPEN_DOOR_BUTTON = 3;
     static final int CLOSE_DOOR_BUTTON = 4;
-    static final int WINCH_FORWARD_BUTTON = 0;
-    static final int WINCH_REVERSE_BUTTON = 1;
+    static final int WINCH_UP_BUTTON = 0;
+    static final int WINCH_DOWN_BUTTON = 1;
     public static CameraServer cameraServer;
+    public static PowerDistributionPanel pdp;
 
 	/**
 	 * This function is run when the robot is first started up and should be
@@ -78,6 +80,9 @@ public class Robot extends IterativeRobot {
         //camera1.setQuality(50);
         cameraServer.startAutomaticCapture("cam0", 0);
         cameraServer.startAutomaticCapture("cam1", 1);
+        
+        pdp = new PowerDistributionPanel();
+        pdp.startLiveWindowMode();
 	}
 
 	/**
@@ -153,6 +158,8 @@ public class Robot extends IterativeRobot {
 	//@Override
 	public void teleopPeriodic() {
 		
+		pdp.updateTable();
+		
 		driveJoystickButtons.updateState();
     	doorJoystickButtons.updateState();
     	
@@ -207,29 +214,37 @@ public class Robot extends IterativeRobot {
 			door.stopMotor();
 		}
 		else if (doorState == MotorState.Forward) {
-			door.set(0.1);
+			door.set(0.55);
 		}
 		else if (doorState == MotorState.Reverse) {
-			door.set(-0.1);
+			door.set(-0.55);
 		}
 		
 	}
 
 	void winchPeriodic() {
-		if (doorJoystickButtons.isPressed(WINCH_FORWARD_BUTTON)) {
+		if (doorJoystickButtons.isPressed(WINCH_UP_BUTTON)) {
 			if (winchState == MotorState.Stopped) {
 				winchState = MotorState.Forward;
 			} else if (winchState == MotorState.Forward) {
 				winchState = MotorState.Stopped;
 			}
 		}
-		if (doorJoystickButtons.isPressed(WINCH_REVERSE_BUTTON)) {
+		if (doorJoystickButtons.isPressed(WINCH_DOWN_BUTTON)) {
 			if (winchState == MotorState.Stopped) {
 				winchState = MotorState.Reverse;
 			} else if (winchState == MotorState.Reverse) {
 				winchState = MotorState.Stopped;
 			}
 		}
-	}
+	
+		if (winchState == MotorState.Forward) {
+			winch.set(0.1);
+		} else if (winchState == MotorState.Reverse) {
+			winch.set(-0.1);
+		} else {
+			winch.stopMotor();
+		}
 
+}
 }

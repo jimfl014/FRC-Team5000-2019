@@ -1,6 +1,7 @@
 
 package org.usfirst.frc.team5000.robot;
 
+import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
@@ -32,12 +33,15 @@ public class Robot extends IterativeRobot {
     public static HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
     public static RobotDrive driveTrain;
     MotorState winchState=MotorState.Stopped;
+    MotorState doorState=MotorState.Stopped;
     double Forwardwinchspeed = 0.7;
     double Reversewinchspeed = -0.6;
     static final boolean USE_MECANUM_DRIVE = true;
-    static final int PICKUP_BALL_BUTTON = 1;
-    static final int WINCH_FORWARD_BUTTON = 2;
-    static final int WINCH_REVERSE_BUTTON = 3;
+    static final int OPEN_DOOR_BUTTON = 3;
+    static final int CLOSE_DOOR_BUTTON = 4;
+    static final int WINCH_FORWARD_BUTTON = 0;
+    static final int WINCH_REVERSE_BUTTON = 1;
+    public static CameraServer cameraServer;
 
 	/**
 	 * This function is run when the robot is first started up and should be
@@ -58,7 +62,7 @@ public class Robot extends IterativeRobot {
         
         driveCimLF = new CANTalon(0);
         driveCimLR = new CANTalon(1);
-        driveCimRF = new CANTalon(2);
+        driveCimRF = new CANTalon(4);
         driveCimRR = new CANTalon(3);
         
         driveCimLF.setInverted(true);
@@ -68,7 +72,12 @@ public class Robot extends IterativeRobot {
         
         door = new Spark(0);
         
-        winch = new CANTalon(4);
+        winch = new CANTalon(2);
+        
+        cameraServer = CameraServer.getInstance();
+        //camera1.setQuality(50);
+        cameraServer.startAutomaticCapture("cam0", 0);
+        cameraServer.startAutomaticCapture("cam1", 1);
 	}
 
 	/**
@@ -168,11 +177,42 @@ public class Robot extends IterativeRobot {
 	}
 
 	void doorPeriodic() {
-		if (doorJoystickButtons.getState(PICKUP_BALL_BUTTON) == HHJoystickButtonState.Pressed) {
-			door.set(0.7);
+		/*
+		if (doorJoystickButtons.getState(OPEN_DOOR_BUTTON) == HHJoystickButtonState.Pressed) {
+			door.setSpeed(0.1);
 		} else {
 			door.stopMotor();
 		}
+		if (doorJoystickButtons.getState(CLOSE_DOOR_BUTTON) == HHJoystickButtonState.Pressed) {
+			door.setSpeed(-0.1);
+		} else {
+			door.stopMotor();
+		}
+		*/
+		if (doorJoystickButtons.isPressed(OPEN_DOOR_BUTTON)) {
+			if (doorState == MotorState.Stopped) {
+				doorState = MotorState.Forward;
+			} else if (doorState == MotorState.Forward) {
+				doorState = MotorState.Stopped;
+			}
+		}
+		if (doorJoystickButtons.isPressed(CLOSE_DOOR_BUTTON)) {
+			if (doorState == MotorState.Stopped) {
+				doorState = MotorState.Reverse;
+			} else if (doorState == MotorState.Reverse) {
+				doorState = MotorState.Stopped;
+			}
+		}
+		if (doorState == MotorState.Stopped) {
+			door.stopMotor();
+		}
+		else if (doorState == MotorState.Forward) {
+			door.set(0.1);
+		}
+		else if (doorState == MotorState.Reverse) {
+			door.set(-0.1);
+		}
+		
 	}
 
 	void winchPeriodic() {

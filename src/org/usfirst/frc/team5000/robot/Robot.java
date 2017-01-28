@@ -34,12 +34,11 @@ public class Robot extends IterativeRobot {
     public static HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
     public static RobotDrive driveTrain;
     MotorState winchState=MotorState.Stopped;
-    MotorState doorState=MotorState.Stopped;
+    MotorState doorState=MotorState.Reverse;
     double Forwardwinchspeed = 0.7;
     double Reversewinchspeed = -0.6;
     static final boolean USE_MECANUM_DRIVE = true;
-    static final int OPEN_DOOR_BUTTON = 3;
-    static final int CLOSE_DOOR_BUTTON = 4;
+    static final int DOOR_BUTTON = 2;
     static final int WINCH_UP_BUTTON = 0;
     static final int WINCH_DOWN_BUTTON = 1;
     public static CameraServer cameraServer;
@@ -196,20 +195,20 @@ public class Robot extends IterativeRobot {
 			door.stopMotor();
 		}
 		*/
-		if (doorJoystickButtons.isPressed(OPEN_DOOR_BUTTON)) {
-			if (doorState == MotorState.Stopped) {
+		if (doorJoystickButtons.isPressed(DOOR_BUTTON)) {
+			if (doorState == MotorState.Reverse) {
 				doorState = MotorState.Forward;
-			} else if (doorState == MotorState.Forward) {
-				doorState = MotorState.Stopped;
+			} else
+				doorState = MotorState.Reverse;
 			}
-		}
-		if (doorJoystickButtons.isPressed(CLOSE_DOOR_BUTTON)) {
+		
+		/*if (doorJoystickButtons.isPressed(CLOSE_DOOR_BUTTON)) {
 			if (doorState == MotorState.Stopped) {
 				doorState = MotorState.Reverse;
 			} else if (doorState == MotorState.Reverse) {
 				doorState = MotorState.Stopped;
 			}
-		}
+		}*/
 		if (doorState == MotorState.Stopped) {
 			door.stopMotor();
 		}

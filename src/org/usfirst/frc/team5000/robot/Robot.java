@@ -226,6 +226,7 @@ public class Robot extends IterativeRobot {
 		} else {
 			winch.stopMotor();
 		}
-
+		SmartDashboard.putNumber("Winch Current", pdp.getCurrent(13));
+		/* Change # for real robot */
 }
 }

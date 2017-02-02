@@ -28,18 +28,17 @@ public class Robot extends IterativeRobot {
     SendableChooser chooser;
     
     public static CANTalon driveCimLF, driveCimLR, driveCimRF, driveCimRR;
-    public static Spark door;
-    public static CANTalon winch;
+    public static Spark door, winch;
+    //public static CANTalon winch;
     public static Joystick driveJoystick, doorJoystick;
     public static HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
     public static RobotDrive driveTrain;
     MotorState winchState=MotorState.Stopped;
-    MotorState doorState=MotorState.Stopped;
+    MotorState doorState=MotorState.Reverse;
     double Forwardwinchspeed = 0.7;
     double Reversewinchspeed = -0.6;
     static final boolean USE_MECANUM_DRIVE = true;
-    static final int OPEN_DOOR_BUTTON = 3;
-    static final int CLOSE_DOOR_BUTTON = 4;
+    static final int DOOR_BUTTON = 2;
     static final int WINCH_UP_BUTTON = 0;
     static final int WINCH_DOWN_BUTTON = 1;
     public static CameraServer cameraServer;
@@ -62,19 +61,19 @@ public class Robot extends IterativeRobot {
         driveJoystickButtons = new HHJoystickButtons( driveJoystick, 10 );
         doorJoystickButtons = new HHJoystickButtons( doorJoystick, 10 );
         
-        driveCimLF = new CANTalon(0);
-        driveCimLR = new CANTalon(1);
-        driveCimRF = new CANTalon(4);
-        driveCimRR = new CANTalon(3);
+        driveCimLF = new CANTalon(2);
+        driveCimLR = new CANTalon(3);
+        driveCimRF = new CANTalon(1);
+        driveCimRR = new CANTalon(0);
         
         driveCimLF.setInverted(true);
-        driveCimRF.setInverted(true);
+        driveCimLR.setInverted(true);
         
-        driveTrain = new RobotDrive(driveCimLF,driveCimLR,driveCimRF,driveCimRR);
-        
+        driveTrain = new RobotDrive(driveCimLF,driveCimRF,driveCimLR,driveCimRR);
+        //driveTrain = new RobotDrive(driveCimLF,driveCimLR,driveCimRF,driveCimRR);
         door = new Spark(0);
         
-        winch = new CANTalon(2);
+        winch = new Spark(1);
         
         cameraServer = CameraServer.getInstance();
         //camera1.setQuality(50);
@@ -196,20 +195,20 @@ public class Robot extends IterativeRobot {
 			door.stopMotor();
 		}
 		*/
-		if (doorJoystickButtons.isPressed(OPEN_DOOR_BUTTON)) {
-			if (doorState == MotorState.Stopped) {
+		if (doorJoystickButtons.isPressed(DOOR_BUTTON)) {
+			if (doorState == MotorState.Reverse) {
 				doorState = MotorState.Forward;
-			} else if (doorState == MotorState.Forward) {
-				doorState = MotorState.Stopped;
+			} else
+				doorState = MotorState.Reverse;
 			}
-		}
-		if (doorJoystickButtons.isPressed(CLOSE_DOOR_BUTTON)) {
+		
+		/*if (doorJoystickButtons.isPressed(CLOSE_DOOR_BUTTON)) {
 			if (doorState == MotorState.Stopped) {
 				doorState = MotorState.Reverse;
 			} else if (doorState == MotorState.Reverse) {
 				doorState = MotorState.Stopped;
 			}
-		}
+		}*/
 		if (doorState == MotorState.Stopped) {
 			door.stopMotor();
 		}

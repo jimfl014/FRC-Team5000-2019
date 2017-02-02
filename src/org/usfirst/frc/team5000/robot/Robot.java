@@ -187,14 +187,13 @@ public class Robot extends IterativeRobot {
 	}
 
 	void doorPeriodic() {
-
 		if (doorJoystickButtons.isPressed(DOOR_BUTTON)) {
 			if (doorState == MotorState.Reverse) {
 				doorState = MotorState.Forward;
 			} else {
 				doorState = MotorState.Reverse;
 			}
-		}	
+		}
 
 		if (doorState == MotorState.Stopped) {
 			door.stopMotor();
@@ -205,6 +204,8 @@ public class Robot extends IterativeRobot {
 		else if (doorState == MotorState.Reverse) {
 			door.set(-0.55);
 		}
+
+		SmartDashboard.putNumber("Door Current", pdp.getCurrent(0));
 	}
 
 	void winchPeriodic() {
@@ -232,5 +233,5 @@ public class Robot extends IterativeRobot {
 		}
 		SmartDashboard.putNumber("Winch Current", pdp.getCurrent(13));
 		/* Change # for real robot */
-}
+	}
 }

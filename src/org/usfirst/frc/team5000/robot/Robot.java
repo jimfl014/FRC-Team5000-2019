@@ -176,7 +176,11 @@ public class Robot extends IterativeRobot {
 
 	void drivePeriodic() {
 		if (USE_MECANUM_DRIVE) {
-			driveTrain.mecanumDrive_Cartesian(driveJoystick.getX(), driveJoystick.getY(), driveJoystick.getTwist(), 0);
+			double x = driveJoystick.getX();
+			double y = driveJoystick.getY();
+			double t = driveJoystick.getTwist();
+			
+			driveTrain.mecanumDrive_Cartesian( x*x,  y*y,  t*t, 0);
 		} else {
 			driveTrain.arcadeDrive(driveJoystick);
 		}

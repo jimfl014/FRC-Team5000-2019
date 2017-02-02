@@ -37,6 +37,7 @@ public class Robot extends IterativeRobot {
     MotorState doorState=MotorState.Reverse;
     double Forwardwinchspeed = 0.7;
     double Reversewinchspeed = -0.6;
+    double current;
     static final boolean USE_MECANUM_DRIVE = true;
     static final int DOOR_BUTTON = 2;
     static final int WINCH_UP_BUTTON = 0;
@@ -218,7 +219,8 @@ public class Robot extends IterativeRobot {
 		else if (doorState == MotorState.Reverse) {
 			door.set(-0.55);
 		}
-		
+		current = pdp.getCurrent(0);
+		SmartDashboard.putNumber("Door Current", current);
 	}
 
 	void winchPeriodic() {

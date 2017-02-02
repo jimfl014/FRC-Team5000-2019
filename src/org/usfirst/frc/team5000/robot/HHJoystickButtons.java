@@ -29,26 +29,26 @@ public class HHJoystickButtons {
     }
     
     public HHJoystickButtonState getState( int button ) {
-        if( !( 0 <= button && button < numberOfButtons ) ) {
+        if( !( 1 <= button && button <= numberOfButtons ) ) {
             throw new IllegalArgumentException("Illegal button number: " + button);
         }
 
-        return joystickButtons[ button ].getState();
+        return joystickButtons[ button - 1 ].getState();
     }
 
     public boolean isPressed( int button ) {
-        if( !( 0 <= button && button < numberOfButtons ) ) {
+        if( !( 1 <= button && button <= numberOfButtons ) ) {
             throw new IllegalArgumentException("Illegal button number: " + button);
         }
 
-        return joystickButtons[ button ].isPressed();
+        return joystickButtons[ button - 1 ].isPressed();
     }
 
     public boolean isReleased( int button ) {
-        if( !( 0 <= button && button < numberOfButtons ) ) {
+        if( !( 1 <= button && button <= numberOfButtons ) ) {
             throw new IllegalArgumentException("Illegal button number: " + button);
         }
 
-        return joystickButtons[ button ].isReleased();
+        return joystickButtons[ button - 1 ].isReleased();
     }
 }

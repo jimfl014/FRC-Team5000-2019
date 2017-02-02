@@ -28,20 +28,19 @@ public class Robot extends IterativeRobot {
     SendableChooser chooser;
     
     public static CANTalon driveCimLF, driveCimLR, driveCimRF, driveCimRR;
-    public static Spark door;
-    public static CANTalon winch;
+    public static Spark door, winch;
+    //public static CANTalon winch;
     public static Joystick driveJoystick, doorJoystick;
     public static HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
     public static RobotDrive driveTrain;
     MotorState winchState=MotorState.Stopped;
     MotorState doorState=MotorState.Reverse;
-    double Forwardwinchspeed = 0.7;
-    double Reversewinchspeed = -0.6;
-    double current;
+    static final double FORWARD_WINCH_SPEED = 0.7;
+    static final double REVERSE_WINCH_SPEED = -0.6;
     static final boolean USE_MECANUM_DRIVE = true;
-    static final int DOOR_BUTTON = 2;
-    static final int WINCH_UP_BUTTON = 0;
-    static final int WINCH_DOWN_BUTTON = 1;
+    static final int DOOR_BUTTON = 3;
+    static final int WINCH_UP_BUTTON = 1;
+    static final int WINCH_DOWN_BUTTON = 2;
     public static CameraServer cameraServer;
     public static PowerDistributionPanel pdp;
 
@@ -62,19 +61,19 @@ public class Robot extends IterativeRobot {
         driveJoystickButtons = new HHJoystickButtons( driveJoystick, 10 );
         doorJoystickButtons = new HHJoystickButtons( doorJoystick, 10 );
         
-        driveCimLF = new CANTalon(0);
-        driveCimLR = new CANTalon(1);
-        driveCimRF = new CANTalon(4);
-        driveCimRR = new CANTalon(3);
+        driveCimLF = new CANTalon(2);
+        driveCimLR = new CANTalon(3);
+        driveCimRF = new CANTalon(1);
+        driveCimRR = new CANTalon(0);
         
         driveCimLF.setInverted(true);
-        driveCimRF.setInverted(true);
+        driveCimLR.setInverted(true);
         
-        driveTrain = new RobotDrive(driveCimLF,driveCimLR,driveCimRF,driveCimRR);
-        
+        driveTrain = new RobotDrive(driveCimLF,driveCimRF,driveCimLR,driveCimRR);
+        //driveTrain = new RobotDrive(driveCimLF,driveCimLR,driveCimRF,driveCimRR);
         door = new Spark(0);
         
-        winch = new CANTalon(2);
+        winch = new Spark(1);
         
         cameraServer = CameraServer.getInstance();
         //camera1.setQuality(50);
@@ -184,32 +183,14 @@ public class Robot extends IterativeRobot {
 	}
 
 	void doorPeriodic() {
-		/*
-		if (doorJoystickButtons.getState(OPEN_DOOR_BUTTON) == HHJoystickButtonState.Pressed) {
-			door.setSpeed(0.1);
-		} else {
-			door.stopMotor();
-		}
-		if (doorJoystickButtons.getState(CLOSE_DOOR_BUTTON) == HHJoystickButtonState.Pressed) {
-			door.setSpeed(-0.1);
-		} else {
-			door.stopMotor();
-		}
-		*/
 		if (doorJoystickButtons.isPressed(DOOR_BUTTON)) {
 			if (doorState == MotorState.Reverse) {
 				doorState = MotorState.Forward;
-			} else
+			} else {
 				doorState = MotorState.Reverse;
 			}
-		
-		/*if (doorJoystickButtons.isPressed(CLOSE_DOOR_BUTTON)) {
-			if (doorState == MotorState.Stopped) {
-				doorState = MotorState.Reverse;
-			} else if (doorState == MotorState.Reverse) {
-				doorState = MotorState.Stopped;
-			}
-		}*/
+		}
+
 		if (doorState == MotorState.Stopped) {
 			door.stopMotor();
 		}
@@ -219,8 +200,8 @@ public class Robot extends IterativeRobot {
 		else if (doorState == MotorState.Reverse) {
 			door.set(-0.55);
 		}
-		current = pdp.getCurrent(0);
-		SmartDashboard.putNumber("Door Current", current);
+
+		SmartDashboard.putNumber("Door Current", pdp.getCurrent(0));
 	}
 
 	void winchPeriodic() {
@@ -240,12 +221,11 @@ public class Robot extends IterativeRobot {
 		}
 	
 		if (winchState == MotorState.Forward) {
-			winch.set(0.1);
+			winch.set( FORWARD_WINCH_SPEED );
 		} else if (winchState == MotorState.Reverse) {
-			winch.set(-0.1);
+			winch.set( REVERSE_WINCH_SPEED );
 		} else {
 			winch.stopMotor();
 		}
-
-}
+	}
 }

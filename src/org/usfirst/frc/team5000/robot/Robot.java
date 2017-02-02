@@ -35,12 +35,12 @@ public class Robot extends IterativeRobot {
     public static RobotDrive driveTrain;
     MotorState winchState=MotorState.Stopped;
     MotorState doorState=MotorState.Reverse;
-    double Forwardwinchspeed = 0.7;
-    double Reversewinchspeed = -0.6;
+    static final double FORWARD_WINCH_SPEED = 0.7;
+    static final double REVERSE_WINCH_SPEED = -0.6;
     static final boolean USE_MECANUM_DRIVE = true;
-    static final int DOOR_BUTTON = 2;
-    static final int WINCH_UP_BUTTON = 0;
-    static final int WINCH_DOWN_BUTTON = 1;
+    static final int DOOR_BUTTON = 3;
+    static final int WINCH_UP_BUTTON = 1;
+    static final int WINCH_DOWN_BUTTON = 2;
     public static CameraServer cameraServer;
     public static PowerDistributionPanel pdp;
 
@@ -183,32 +183,15 @@ public class Robot extends IterativeRobot {
 	}
 
 	void doorPeriodic() {
-		/*
-		if (doorJoystickButtons.getState(OPEN_DOOR_BUTTON) == HHJoystickButtonState.Pressed) {
-			door.setSpeed(0.1);
-		} else {
-			door.stopMotor();
-		}
-		if (doorJoystickButtons.getState(CLOSE_DOOR_BUTTON) == HHJoystickButtonState.Pressed) {
-			door.setSpeed(-0.1);
-		} else {
-			door.stopMotor();
-		}
-		*/
+
 		if (doorJoystickButtons.isPressed(DOOR_BUTTON)) {
 			if (doorState == MotorState.Reverse) {
 				doorState = MotorState.Forward;
-			} else
+			} else {
 				doorState = MotorState.Reverse;
 			}
-		
-		/*if (doorJoystickButtons.isPressed(CLOSE_DOOR_BUTTON)) {
-			if (doorState == MotorState.Stopped) {
-				doorState = MotorState.Reverse;
-			} else if (doorState == MotorState.Reverse) {
-				doorState = MotorState.Stopped;
-			}
-		}*/
+		}	
+
 		if (doorState == MotorState.Stopped) {
 			door.stopMotor();
 		}
@@ -218,7 +201,6 @@ public class Robot extends IterativeRobot {
 		else if (doorState == MotorState.Reverse) {
 			door.set(-0.55);
 		}
-		
 	}
 
 	void winchPeriodic() {
@@ -238,9 +220,9 @@ public class Robot extends IterativeRobot {
 		}
 	
 		if (winchState == MotorState.Forward) {
-			winch.set(0.1);
+			winch.set( FORWARD_WINCH_SPEED );
 		} else if (winchState == MotorState.Reverse) {
-			winch.set(-0.1);
+			winch.set( REVERSE_WINCH_SPEED );
 		} else {
 			winch.stopMotor();
 		}

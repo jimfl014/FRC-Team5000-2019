@@ -1,6 +1,7 @@
 
 package org.usfirst.frc.team5000.robot;
 
+import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
@@ -22,7 +23,7 @@ import java.util.*; //Added 2/8 JF to support Boolean to String method
  * directory.
  */
 public class Robot extends IterativeRobot {
-	
+
 	// Enums
 	static enum MotorState {
 		Stopped, Forward, Reverse
@@ -30,24 +31,29 @@ public class Robot extends IterativeRobot {
 
 	static enum AutoState {
 		Start, Step1, Step2, Step3, Step4, Stop;
-		
+
 		public AutoState next() {
-		    switch (this) {
-		      case Start: return Step1;
-		      case Step1: return Step2;
-		      case Step2: return Step3;
-		      case Step3: return Step4;
-		      default: return Stop;
-		    }
-		  }
+			switch (this) {
+			case Start:
+				return Step1;
+			case Step1:
+				return Step2;
+			case Step2:
+				return Step3;
+			case Step3:
+				return Step4;
+			default:
+				return Stop;
+			}
+		}
 	};
 
 	static enum DriveState {
 		Stopped, Forward, Reverse, TurnRight, TurnLeft
 	};
-	
+
 	// Constants
-	
+
 	static final double FORWARD_WINCH_SPEED = -0.7;
 	static final double REVERSE_WINCH_SPEED = 0.6;
 	static final double FORWARD_DOOR_SPEED = 0.7;
@@ -61,7 +67,7 @@ public class Robot extends IterativeRobot {
 	static final long QUICK_RELEASE_TIME = 125;
 	final String DEFAULT_AUTO = "Default";
 	final String CUSTOM_AUTO = "My Auto";
-	
+
 	// Variables
 	String autoSelected;
 	AutoState autoState;
@@ -84,6 +90,8 @@ public class Robot extends IterativeRobot {
 	DigitalInput IR_Sensor_L, IR_Sensor_R; // Added 2/8 JF
 	long quickReleaseEndTime = 0;
 
+	AnalogGyro gyro;
+
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
@@ -97,7 +105,7 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putData("Auto choices", chooser);
 
 		autoState = AutoState.Start;
-		
+
 		driveJoystick = new Joystick(0);
 		doorJoystick = new Joystick(1);
 		driveJoystickButtons = new HHJoystickButtons(driveJoystick, 10);
@@ -115,7 +123,6 @@ public class Robot extends IterativeRobot {
 		// driveTrain = new
 		// RobotDrive(driveCimLF,driveCimLR,driveCimRF,driveCimRR);
 		door = new Spark(0);
-
 		winch = new Spark(1);
 
 		cameraServer = CameraServer.getInstance();
@@ -128,9 +135,11 @@ public class Robot extends IterativeRobot {
 
 		IR_Sensor_L = new DigitalInput(0); // Added 2/8 JF
 		IR_Sensor_R = new DigitalInput(1);
-		
-		SmartDashboard.putString("Camera 1", driveDirection == MotorState.Forward ? "Forward" : "Reverse");
-		SmartDashboard.putString("Camera 2", driveDirection == MotorState.Reverse ? "Forward" : "Reverse");
+
+		gyro = new AnalogGyro(0);
+
+		SmartDashboard.putString("Camera 2", driveDirection == MotorState.Forward ? "Forward" : "Reverse");
+		SmartDashboard.putString("Camera 1", driveDirection == MotorState.Reverse ? "Forward" : "Reverse");
 	}
 
 	/**
@@ -172,6 +181,8 @@ public class Robot extends IterativeRobot {
 		 */
 
 		// schedule the autonomous command (example)
+		
+		autoState = AutoState.Start;
 	}
 
 	/**
@@ -205,55 +216,59 @@ public class Robot extends IterativeRobot {
 			driveTrain.mecanumDrive_Cartesian(0, 0, 0, 180);
 			break;
 		}
-		
+
 		if (0 < autoStepEndTime && autoStepEndTime < System.currentTimeMillis()) {
-			
+
 			double x = 0;
 			double y = 0;
 			double t = 0;
-			
+
 			switch (driveState) {
 			case Stopped:
-				
+
 				break;
-				
+
 			case Forward:
-				
+
 				x = 0.7;
 				break;
-				
+
 			case Reverse:
-				
+
 				x = -0.7;
 				break;
-				
+
 			case TurnRight:
-				
+
 				t = 0.5;
 				break;
-				
+
 			case TurnLeft:
-				
+
 				t = -0.5;
 				break;
 			}
-			
+
 			driveTrain.mecanumDrive_Cartesian(x, y, t, 180);
-			
+
 		} else {
 			autoState = autoState.next();
 			autoStepEndTime = 0;
 		}
 	}
-	// @Override
-	// public void teleopInit() {
-	// This makes sure that the autonomous stops running when
-	// teleop starts running. If you want the autonomous to
-	// continue until interrupted by another command, remove
-	// this line or comment it out.
-	// if (autonomousCommand != null)
-	// autonomousCommand.cancel();
-	// }
+
+	@Override
+	public void teleopInit() {
+		// This makes sure that the autonomous stops running when
+		// teleop starts running. If you want the autonomous to
+		// continue until interrupted by another command, remove
+		// this line or comment it out.
+		if (autoState != AutoState.Stop) {
+			driveTrain.mecanumDrive_Cartesian(0, 0, 0, 180);
+		}
+
+		gyro.reset();
+	}
 
 	/**
 	 * This function is called periodically during operator control
@@ -276,6 +291,10 @@ public class Robot extends IterativeRobot {
 
 		SmartDashboard.putString("Left IR  ", pin_Status_L);
 		SmartDashboard.putString("Right IR ", pin_Status_R);
+
+		double angle = gyro.getAngle();
+		
+		SmartDashboard.putNumber("Gyro Angle ", angle);
 	}
 
 	/**
@@ -295,18 +314,18 @@ public class Robot extends IterativeRobot {
 					driveDirection = MotorState.Forward;
 				}
 
-				SmartDashboard.putString("Camera 1", driveDirection == MotorState.Forward ? "Forward" : "Reverse");
-				SmartDashboard.putString("Camera 2", driveDirection == MotorState.Reverse ? "Forward" : "Reverse");
+				SmartDashboard.putString("Camera 2", driveDirection == MotorState.Forward ? "Forward" : "Reverse");
+				SmartDashboard.putString("Camera 1", driveDirection == MotorState.Reverse ? "Forward" : "Reverse");
 			}
 
 			double d = driveDirection == MotorState.Forward ? 1.0 : -1.0;
 			double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
-			
+
 			double x = driveJoystick.getX();
 			double y = driveJoystick.getY();
 			double t = driveJoystick.getTwist();
 
-			driveTrain.mecanumDrive_Cartesian(x, -y, t, 0);
+			driveTrain.mecanumDrive_Cartesian(x, -y, t, gyroAngle);
 			// changed from x*x,y*y,t*t, orientation changed to 180 from 0 2/8
 			// JF
 		} else {
@@ -322,7 +341,7 @@ public class Robot extends IterativeRobot {
 		}
 
 		String doorStatus = "Stopped";
-		
+
 		if (doorState == MotorState.Stopped) {
 			door.stopMotor();
 			doorStatus = "Stopped";
@@ -361,9 +380,9 @@ public class Robot extends IterativeRobot {
 		 * } else if (winchState == MotorState.Reverse) { winchState =
 		 * MotorState.Stopped; } }
 		 */
-		
+
 		String winchStatus;
-		
+
 		if (winchState == MotorState.Forward) {
 			winch.set(FORWARD_WINCH_SPEED);
 			winchStatus = "Forward";

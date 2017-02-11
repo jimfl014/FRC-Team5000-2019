@@ -22,24 +22,32 @@ import java.util.*; //Added 2/8 JF to support Boolean to String method
  * directory.
  */
 public class Robot extends IterativeRobot {
-	enum MotorState {
+	
+	// Enums
+	static enum MotorState {
 		Stopped, Forward, Reverse
 	};
 
-	final String defaultAuto = "Default";
-	final String customAuto = "My Auto";
-	String autoSelected;
-	SendableChooser chooser;
+	static enum AutoState {
+		Start, Step1, Step2, Step3, Step4, Stop;
+		
+		public AutoState next() {
+		    switch (this) {
+		      case Start: return Step1;
+		      case Step1: return Step2;
+		      case Step2: return Step3;
+		      case Step3: return Step4;
+		      default: return Stop;
+		    }
+		  }
+	};
 
-	public static CANTalon driveCimLF, driveCimLR, driveCimRF, driveCimRR;
-	public static Spark door, winch;
-	// public static CANTalon winch;
-	public static Joystick driveJoystick, doorJoystick;
-	public static HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
-	public static RobotDrive driveTrain;
-	MotorState driveDirection = MotorState.Forward;
-	MotorState winchState = MotorState.Stopped;
-	MotorState doorState = MotorState.Reverse;
+	static enum DriveState {
+		Stopped, Forward, Reverse, TurnRight, TurnLeft
+	};
+	
+	// Constants
+	
 	static final double FORWARD_WINCH_SPEED = -0.7;
 	static final double REVERSE_WINCH_SPEED = 0.6;
 	static final double FORWARD_DOOR_SPEED = 0.7;
@@ -51,9 +59,27 @@ public class Robot extends IterativeRobot {
 	static final int WINCH_UP_BUTTON = 1;
 	static final int WINCH_QUICK_RELEASE_BUTTON = 1;
 	static final long QUICK_RELEASE_TIME = 125;
-	// static final int WINCH_DOWN_BUTTON = 2; Commented out 2/8 JF
-	public static CameraServer cameraServer;
-	public static PowerDistributionPanel pdp;
+	final String DEFAULT_AUTO = "Default";
+	final String CUSTOM_AUTO = "My Auto";
+	
+	// Variables
+	String autoSelected;
+	AutoState autoState;
+	long autoStepEndTime = 0;
+	DriveState driveState = DriveState.Stopped;
+	SendableChooser chooser;
+
+	CANTalon driveCimLF, driveCimLR, driveCimRF, driveCimRR;
+	Spark door, winch;
+	Joystick driveJoystick, doorJoystick;
+	HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
+	RobotDrive driveTrain;
+	MotorState driveDirection = MotorState.Forward;
+	MotorState winchState = MotorState.Stopped;
+	MotorState doorState = MotorState.Reverse;
+
+	CameraServer cameraServer;
+	PowerDistributionPanel pdp;
 
 	DigitalInput IR_Sensor_L, IR_Sensor_R; // Added 2/8 JF
 	long quickReleaseEndTime = 0;
@@ -66,10 +92,12 @@ public class Robot extends IterativeRobot {
 	public void robotInit() {
 
 		chooser = new SendableChooser();
-		chooser.addDefault("Default Auto", defaultAuto);
-		chooser.addObject("My Auto", customAuto);
+		chooser.addDefault("Default Auto", DEFAULT_AUTO);
+		chooser.addObject("Test Auto", CUSTOM_AUTO);
 		SmartDashboard.putData("Auto choices", chooser);
 
+		autoState = AutoState.Start;
+		
 		driveJoystick = new Joystick(0);
 		doorJoystick = new Joystick(1);
 		driveJoystickButtons = new HHJoystickButtons(driveJoystick, 10);
@@ -100,6 +128,9 @@ public class Robot extends IterativeRobot {
 
 		IR_Sensor_L = new DigitalInput(0); // Added 2/8 JF
 		IR_Sensor_R = new DigitalInput(1);
+		
+		SmartDashboard.putString("Camera 1", driveDirection == MotorState.Forward ? "Forward" : "Reverse");
+		SmartDashboard.putString("Camera 2", driveDirection == MotorState.Reverse ? "Forward" : "Reverse");
 	}
 
 	/**
@@ -131,7 +162,7 @@ public class Robot extends IterativeRobot {
 	public void autonomousInit() {
 		autoSelected = (String) chooser.getSelected();
 		// autoSelected = SmartDashboard.getString("Auto Selector",
-		// defaultAuto);
+		// DEFAULT_AUTO);
 		System.out.println("Auto selected: " + autoSelected);
 		/*
 		 * String autoSelected = SmartDashboard.getString("Auto Selector",
@@ -150,16 +181,70 @@ public class Robot extends IterativeRobot {
 	public void autonomousPeriodic() {
 
 		switch (autoSelected) {
-		case customAuto:
-			// Put custom auto code here
+		case CUSTOM_AUTO:
+			customAutoPeriodic();
 			break;
-		case defaultAuto:
+		case DEFAULT_AUTO:
 		default:
 			// Put default auto code here
 			break;
 		}
 	}
 
+	void customAutoPeriodic() {
+		switch (autoState) {
+		case Start:
+			driveState = DriveState.Forward;
+			autoStepEndTime = System.currentTimeMillis() + 2000;
+			break;
+		case Step1:
+		case Step2:
+		case Step3:
+		case Step4:
+		case Stop:
+			driveTrain.mecanumDrive_Cartesian(0, 0, 0, 180);
+			break;
+		}
+		
+		if (0 < autoStepEndTime && autoStepEndTime < System.currentTimeMillis()) {
+			
+			double x = 0;
+			double y = 0;
+			double t = 0;
+			
+			switch (driveState) {
+			case Stopped:
+				
+				break;
+				
+			case Forward:
+				
+				x = 0.7;
+				break;
+				
+			case Reverse:
+				
+				x = -0.7;
+				break;
+				
+			case TurnRight:
+				
+				t = 0.5;
+				break;
+				
+			case TurnLeft:
+				
+				t = -0.5;
+				break;
+			}
+			
+			driveTrain.mecanumDrive_Cartesian(x, y, t, 180);
+			
+		} else {
+			autoState = autoState.next();
+			autoStepEndTime = 0;
+		}
+	}
 	// @Override
 	// public void teleopInit() {
 	// This makes sure that the autonomous stops running when
@@ -189,9 +274,8 @@ public class Robot extends IterativeRobot {
 		String pin_Status_L = new Boolean(IR_Sensor_L.get()).toString();
 		String pin_Status_R = new Boolean(IR_Sensor_R.get()).toString();
 
-		SmartDashboard.putString("OK Left", pin_Status_L);
-		SmartDashboard.putString("OK Right", pin_Status_R);
-
+		SmartDashboard.putString("Left IR  ", pin_Status_L);
+		SmartDashboard.putString("Right IR ", pin_Status_R);
 	}
 
 	/**
@@ -216,12 +300,13 @@ public class Robot extends IterativeRobot {
 			}
 
 			double d = driveDirection == MotorState.Forward ? 1.0 : -1.0;
-
+			double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
+			
 			double x = driveJoystick.getX();
 			double y = driveJoystick.getY();
 			double t = driveJoystick.getTwist();
 
-			driveTrain.mecanumDrive_Cartesian(x * d, y * d, t * d, 180);
+			driveTrain.mecanumDrive_Cartesian(x, -y, t, 0);
 			// changed from x*x,y*y,t*t, orientation changed to 180 from 0 2/8
 			// JF
 		} else {

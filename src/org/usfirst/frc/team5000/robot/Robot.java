@@ -66,8 +66,9 @@ public class Robot extends IterativeRobot {
 	static final int WINCH_UP_BUTTON = 1;
 	static final int WINCH_QUICK_RELEASE_BUTTON = 1;
 	static final long QUICK_RELEASE_TIME = 125;
-	final String DEFAULT_AUTO = "Default";
-	final String CUSTOM_AUTO = "My Auto";
+	final String LEFT_AUTO = "Left";
+	final String CENTER_AUTO = "Center";
+	final String RIGHT_AUTO = "Right";
 
 	// Variables
 	String autoSelected;
@@ -101,8 +102,9 @@ public class Robot extends IterativeRobot {
 	public void robotInit() {
 
 		chooser = new SendableChooser();
-		chooser.addDefault("Default Auto", DEFAULT_AUTO);
-		chooser.addObject("Test Auto", CUSTOM_AUTO);
+		chooser.addDefault("Left Auto", LEFT_AUTO);
+		chooser.addObject("Center Auto", CENTER_AUTO);
+		chooser.addObject("Right Auto", RIGHT_AUTO);
 		SmartDashboard.putData("Auto choices", chooser);
 
 		autoState = AutoState.Start;
@@ -118,11 +120,16 @@ public class Robot extends IterativeRobot {
 		driveCimRR = new CANTalon(0);
 
 		driveCimLF.setInverted(true);
-		driveCimLR.setInverted(true);
-
-		driveTrain = new RobotDrive(driveCimLF, driveCimLR, driveCimRF, driveCimRR);
-		// driveTrain = new
-		// RobotDrive(driveCimLF,driveCimLR,driveCimRF,driveCimRR);
+		if (USE_MECANUM_DRIVE) {
+			driveCimLR.setInverted(true);
+		}
+		
+		if (USE_MECANUM_DRIVE) {
+			driveTrain = new RobotDrive(driveCimLF, driveCimLR, driveCimRF, driveCimRR);
+		} else {
+			driveTrain = new RobotDrive(driveCimRF, driveCimLR);
+		}
+		
 		door = new Spark(0);
 		winch = new Spark(1);
 
@@ -195,18 +202,31 @@ public class Robot extends IterativeRobot {
 	public void autonomousPeriodic() {
 
 		switch (autoSelected) {
-		case CUSTOM_AUTO:
-	
-			// break;
-		case DEFAULT_AUTO:
+		case LEFT_AUTO:
+			leftAutoPeriodic();
+			break;
+			
 		default:
-			customAutoPeriodic();
-			// Put default auto code here
+			case CENTER_AUTO:
+			centerAutoPeriodic();
+			break;
+			
+		case RIGHT_AUTO:
+
+			rightAutoPeriodic();
 			break;
 		}
 	}
 
-	void customAutoPeriodic() {
+	void leftAutoPeriodic() {
+		centerAutoPeriodic();
+	}
+	
+	void rightAutoPeriodic() {
+		centerAutoPeriodic();
+	}
+	
+	void centerAutoPeriodic() {
 		switch (autoState) {
 		case Start:
 			if (autoStepEndTime == 0) {
@@ -217,8 +237,8 @@ public class Robot extends IterativeRobot {
 			
 		case Step1:
 			if (autoStepEndTime == 0) {
-				driveState = DriveState.Stopped;
-			}
+				driveState = DriveState.TurnLeft;
+				autoStepEndTime = System.currentTimeMillis() + 2000;			}
 			break;
 	
 		case Step2:
@@ -273,8 +293,11 @@ public class Robot extends IterativeRobot {
 			}
 
 			double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
-
-			driveTrain.mecanumDrive_Cartesian(x, y, t, gyroAngle);
+			if (USE_MECANUM_DRIVE) {
+				driveTrain.mecanumDrive_Cartesian(x, y, t, gyroAngle);
+			} else {
+				driveTrain.arcadeDrive( -x, t );
+			}
 
 		} else {
 			autoStepEndTime = 0;
@@ -289,7 +312,11 @@ public class Robot extends IterativeRobot {
 		// continue until interrupted by another command, remove
 		// this line or comment it out.
 		if (autoState != AutoState.Stop) {
-			driveTrain.mecanumDrive_Cartesian(0, 0, 0, 180);
+			if (USE_MECANUM_DRIVE) {
+				driveTrain.mecanumDrive_Cartesian(0, 0, 0, 180);
+			} else {
+				driveTrain.stopMotor();
+			}
 		}
 
 		gyro.reset();

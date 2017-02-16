@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DigitalInput;
 import java.util.*; //Added 2/8 JF to support Boolean to String method
+import java.lang.Math;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -56,8 +57,8 @@ public class Robot extends IterativeRobot {
 
 	static final double FORWARD_WINCH_SPEED = -0.7;
 	static final double REVERSE_WINCH_SPEED = 0.6;
-	static final double FORWARD_DOOR_SPEED = 0.7;
-	static final double REVERSE_DOOR_SPEED = -0.7;
+	static final double FORWARD_DOOR_SPEED = 0.5; //2/15 was 0.7
+	static final double REVERSE_DOOR_SPEED = -0.5; //2/15 was -0.7
 	static final boolean USE_MECANUM_DRIVE = true;
 	static final int DRIVE_DIRECTION_SWITCH_BUTTON = 2;
 	static final int OPEN_DOOR_BUTTON = 3;
@@ -82,7 +83,7 @@ public class Robot extends IterativeRobot {
 	RobotDrive driveTrain;
 	MotorState driveDirection = MotorState.Forward;
 	MotorState winchState = MotorState.Stopped;
-	MotorState doorState = MotorState.Reverse;
+	MotorState doorState = MotorState.Forward;
 
 	CameraServer cameraServer;
 	PowerDistributionPanel pdp;
@@ -119,7 +120,7 @@ public class Robot extends IterativeRobot {
 		driveCimLF.setInverted(true);
 		driveCimLR.setInverted(true);
 
-		driveTrain = new RobotDrive(driveCimLF, driveCimRF, driveCimLR, driveCimRR);
+		driveTrain = new RobotDrive(driveCimLF, driveCimLR, driveCimRF, driveCimRR);
 		// driveTrain = new
 		// RobotDrive(driveCimLF,driveCimLR,driveCimRF,driveCimRR);
 		door = new Spark(0);
@@ -183,6 +184,8 @@ public class Robot extends IterativeRobot {
 		// schedule the autonomous command (example)
 		
 		autoState = AutoState.Start;
+		autoStepEndTime = 0;
+		driveDirection = MotorState.Forward;
 	}
 
 	/**
@@ -193,10 +196,11 @@ public class Robot extends IterativeRobot {
 
 		switch (autoSelected) {
 		case CUSTOM_AUTO:
-			customAutoPeriodic();
-			break;
+	
+			// break;
 		case DEFAULT_AUTO:
 		default:
+			customAutoPeriodic();
 			// Put default auto code here
 			break;
 		}
@@ -205,19 +209,43 @@ public class Robot extends IterativeRobot {
 	void customAutoPeriodic() {
 		switch (autoState) {
 		case Start:
-			driveState = DriveState.Forward;
-			autoStepEndTime = System.currentTimeMillis() + 2000;
+			if (autoStepEndTime == 0) {
+				driveState = DriveState.Forward;
+				autoStepEndTime = System.currentTimeMillis() + 2000;
+			}
 			break;
+			
 		case Step1:
+			if (autoStepEndTime == 0) {
+				driveState = DriveState.Stopped;
+			}
+			break;
+	
 		case Step2:
+			if (autoStepEndTime == 0) {
+				driveState = DriveState.Stopped;
+			}
+			break;
+	
 		case Step3:
+			if (autoStepEndTime == 0) {
+				driveState = DriveState.Stopped;
+			}
+			break;
+	
 		case Step4:
+			if (autoStepEndTime == 0) {
+				driveState = DriveState.Stopped;
+			}
+			break;
+	
 		case Stop:
-			driveTrain.mecanumDrive_Cartesian(0, 0, 0, 180);
+			autoStepEndTime = 0;
+			driveState = DriveState.Stopped;
 			break;
 		}
 
-		if (0 < autoStepEndTime && autoStepEndTime < System.currentTimeMillis()) {
+		if (System.currentTimeMillis() < autoStepEndTime) {
 
 			double x = 0;
 			double y = 0;
@@ -225,35 +253,32 @@ public class Robot extends IterativeRobot {
 
 			switch (driveState) {
 			case Stopped:
-
 				break;
 
 			case Forward:
-
 				x = 0.7;
 				break;
 
 			case Reverse:
-
 				x = -0.7;
 				break;
 
 			case TurnRight:
-
 				t = 0.5;
 				break;
 
 			case TurnLeft:
-
 				t = -0.5;
 				break;
 			}
 
-			driveTrain.mecanumDrive_Cartesian(x, y, t, 180);
+			double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
+
+			driveTrain.mecanumDrive_Cartesian(x, y, t, gyroAngle);
 
 		} else {
-			autoState = autoState.next();
 			autoStepEndTime = 0;
+			autoState = autoState.next();
 		}
 	}
 
@@ -268,6 +293,8 @@ public class Robot extends IterativeRobot {
 		}
 
 		gyro.reset();
+		doorState = MotorState.Forward;
+		setDoorStatus();
 	}
 
 	/**
@@ -325,7 +352,7 @@ public class Robot extends IterativeRobot {
 			double y = driveJoystick.getY();
 			double t = driveJoystick.getTwist();
 
-			driveTrain.mecanumDrive_Cartesian(x, -y, t, gyroAngle);
+			driveTrain.mecanumDrive_Cartesian(x * Math.abs(x), -(y * Math.abs(y)), -(t * Math.abs(t)), gyroAngle);
 			// changed from x*x,y*y,t*t, orientation changed to 180 from 0 2/8
 			// JF
 		} else {
@@ -339,22 +366,10 @@ public class Robot extends IterativeRobot {
 		} else if (doorJoystickButtons.isPressed(OPEN_DOOR_BUTTON)) {
 			doorState = MotorState.Reverse;
 		}
-
-		String doorStatus = "Stopped";
-
-		if (doorState == MotorState.Stopped) {
-			door.stopMotor();
-			doorStatus = "Stopped";
-		} else if (doorState == MotorState.Forward) {
-			door.set(FORWARD_DOOR_SPEED);
-			doorStatus = "Forward";
-		} else if (doorState == MotorState.Reverse) {
-			door.set(REVERSE_DOOR_SPEED);
-			doorStatus = "Reverse";
-		}
+		
+		setDoorStatus();
 
 		SmartDashboard.putNumber("Door Current", pdp.getCurrent(0));
-		SmartDashboard.putString("Door Status", doorStatus);
 	}
 
 	void winchPeriodic() {
@@ -393,8 +408,25 @@ public class Robot extends IterativeRobot {
 			winch.stopMotor();
 			winchStatus = "Stopped";
 		}
-		SmartDashboard.putNumber("Winch Current", pdp.getCurrent(13));
+		SmartDashboard.putNumber("Winch Current", pdp.getCurrent(15));
 		SmartDashboard.putString("Winch Status", winchStatus);
 		/* Change # for real robot */
+	}
+	
+	void setDoorStatus() {
+		String doorStatus = "Stopped";
+
+		if (doorState == MotorState.Stopped) {
+			door.stopMotor();
+			doorStatus = "Stopped";
+		} else if (doorState == MotorState.Forward) {
+			door.set(FORWARD_DOOR_SPEED);
+			doorStatus = "Closed";
+		} else if (doorState == MotorState.Reverse) {
+			door.set(REVERSE_DOOR_SPEED);
+			doorStatus = "Open";
+		}
+
+		SmartDashboard.putString("Door Status", doorStatus);
 	}
 }

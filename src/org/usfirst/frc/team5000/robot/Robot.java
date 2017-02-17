@@ -30,10 +30,10 @@ public class Robot extends IterativeRobot {
 		Stopped, Forward, Reverse
 	};
 
-	static enum AutoState {
+	static enum AutoStep {
 		Start, Step1, Step2, Step3, Step4, Stop;
 
-		public AutoState next() {
+		public AutoStep next() {
 			switch (this) {
 			case Start:
 				return Step1;
@@ -50,15 +50,15 @@ public class Robot extends IterativeRobot {
 	};
 
 	static enum DriveState {
-		Stopped, Forward, Reverse, TurnRight, TurnLeft
+		Stopped, Forward, Reverse, Left, Right, Turn
 	};
 
 	// Constants
 
 	static final double FORWARD_WINCH_SPEED = -0.7;
 	static final double REVERSE_WINCH_SPEED = 0.6;
-	static final double FORWARD_DOOR_SPEED = 0.5; //2/15 was 0.7
-	static final double REVERSE_DOOR_SPEED = -0.5; //2/15 was -0.7
+	static final double FORWARD_DOOR_SPEED = 0.5; // 2/15 was 0.7
+	static final double REVERSE_DOOR_SPEED = -0.5; // 2/15 was -0.7
 	static final boolean USE_MECANUM_DRIVE = true;
 	static final int DRIVE_DIRECTION_SWITCH_BUTTON = 2;
 	static final int OPEN_DOOR_BUTTON = 3;
@@ -66,14 +66,20 @@ public class Robot extends IterativeRobot {
 	static final int WINCH_UP_BUTTON = 1;
 	static final int WINCH_QUICK_RELEASE_BUTTON = 1;
 	static final long QUICK_RELEASE_TIME = 125;
-	final String LEFT_AUTO = "Left";
-	final String CENTER_AUTO = "Center";
-	final String RIGHT_AUTO = "Right";
+	static final String LEFT_AUTO = "Left";
+	static final String CENTER_AUTO = "Center";
+	static final String RIGHT_AUTO = "Right";
+	static final double Kp = 0.03;
 
 	// Variables
 	String autoSelected;
-	AutoState autoState;
-	long autoStepEndTime = 0;
+	AutoStep autoStep;
+	boolean initAutoStep = true;
+	double targetSpeed = 0;
+	long targetTime = 0;
+	double targetAngle = 0;
+	double targetTurningSpeed = 0;
+	double currentAngle = 0;
 	DriveState driveState = DriveState.Stopped;
 	SendableChooser chooser;
 
@@ -107,8 +113,6 @@ public class Robot extends IterativeRobot {
 		chooser.addObject("Right Auto", RIGHT_AUTO);
 		SmartDashboard.putData("Auto choices", chooser);
 
-		autoState = AutoState.Start;
-
 		driveJoystick = new Joystick(0);
 		doorJoystick = new Joystick(1);
 		driveJoystickButtons = new HHJoystickButtons(driveJoystick, 10);
@@ -123,13 +127,13 @@ public class Robot extends IterativeRobot {
 		if (USE_MECANUM_DRIVE) {
 			driveCimLR.setInverted(true);
 		}
-		
+
 		if (USE_MECANUM_DRIVE) {
 			driveTrain = new RobotDrive(driveCimLF, driveCimLR, driveCimRF, driveCimRR);
 		} else {
 			driveTrain = new RobotDrive(driveCimRF, driveCimLR);
 		}
-		
+
 		door = new Spark(0);
 		winch = new Spark(1);
 
@@ -189,9 +193,13 @@ public class Robot extends IterativeRobot {
 		 */
 
 		// schedule the autonomous command (example)
-		
-		autoState = AutoState.Start;
-		autoStepEndTime = 0;
+
+		autoStep = AutoStep.Start;
+		initAutoStep = true;
+		targetTime = 0;
+		targetSpeed = 0;
+		targetAngle = 0;
+		targetTurningSpeed = 0;
 		driveDirection = MotorState.Forward;
 	}
 
@@ -201,16 +209,22 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 
+		currentAngle = gyro.getAngle();
+
+		String strDouble = String.format("%.2f", currentAngle);
+
+		SmartDashboard.putString("Gyro Angle ", strDouble);
+
 		switch (autoSelected) {
 		case LEFT_AUTO:
 			leftAutoPeriodic();
 			break;
-			
+
 		default:
-			case CENTER_AUTO:
+		case CENTER_AUTO:
 			centerAutoPeriodic();
 			break;
-			
+
 		case RIGHT_AUTO:
 
 			rightAutoPeriodic();
@@ -221,88 +235,206 @@ public class Robot extends IterativeRobot {
 	void leftAutoPeriodic() {
 		centerAutoPeriodic();
 	}
-	
+
 	void rightAutoPeriodic() {
 		centerAutoPeriodic();
 	}
-	
+
 	void centerAutoPeriodic() {
-		switch (autoState) {
+		switch (autoStep) {
 		case Start:
-			if (autoStepEndTime == 0) {
-				driveState = DriveState.Forward;
-				autoStepEndTime = System.currentTimeMillis() + 2000;
-			}
+			driveForward(0.7, 2000);
 			break;
-			
+
 		case Step1:
-			if (autoStepEndTime == 0) {
-				driveState = DriveState.TurnLeft;
-				autoStepEndTime = System.currentTimeMillis() + 2000;			}
+			turnLeft(0.2, 90);
 			break;
-	
+
 		case Step2:
-			if (autoStepEndTime == 0) {
-				driveState = DriveState.Stopped;
-			}
+			stop();
 			break;
-	
+
 		case Step3:
-			if (autoStepEndTime == 0) {
-				driveState = DriveState.Stopped;
-			}
+			stop();
 			break;
-	
+
 		case Step4:
-			if (autoStepEndTime == 0) {
-				driveState = DriveState.Stopped;
-			}
+			stop();
 			break;
-	
+
 		case Stop:
-			autoStepEndTime = 0;
-			driveState = DriveState.Stopped;
+			stop();
 			break;
 		}
 
-		if (System.currentTimeMillis() < autoStepEndTime) {
+		doStep();
+	}
 
-			double x = 0;
-			double y = 0;
-			double t = 0;
+	void doStep() {
 
-			switch (driveState) {
-			case Stopped:
-				break;
+		double angularDistance = getAngularDistanceFromTarget(currentAngle, targetAngle);
 
-			case Forward:
-				x = 0.7;
-				break;
+		double x = 0;
+		double y = 0;
+		double t = 0;
 
-			case Reverse:
-				x = -0.7;
-				break;
+		switch (driveState) {
+		case Stopped:
+			break;
 
-			case TurnRight:
-				t = 0.5;
-				break;
+		case Forward:
+			x = targetSpeed;
+			t = angularDistance * Kp;
+			break;
 
-			case TurnLeft:
-				t = -0.5;
-				break;
-			}
+		case Reverse:
+			x = -targetSpeed;
+			t = angularDistance * Kp;
+			break;
 
-			double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
-			if (USE_MECANUM_DRIVE) {
-				driveTrain.mecanumDrive_Cartesian(x, y, t, gyroAngle);
-			} else {
-				driveTrain.arcadeDrive( -x, t );
-			}
+		case Left:
+			y = -targetSpeed;
+			t = angularDistance * Kp;
+			break;
 
-		} else {
-			autoStepEndTime = 0;
-			autoState = autoState.next();
+		case Right:
+			y = targetSpeed;
+			t = angularDistance * Kp;
+			break;
+
+		case Turn:
+			t = getTurningSpeedFromAngularDistance(angularDistance);
+			break;
 		}
+
+		double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
+		if (USE_MECANUM_DRIVE) {
+			driveTrain.mecanumDrive_Cartesian(x, y, t, gyroAngle);
+		} else {
+			driveTrain.arcadeDrive(-x, t);
+		}
+
+		boolean incrementStep = false;
+
+		if (0 < targetTime && targetTime <= System.currentTimeMillis()) {
+			incrementStep = true;
+		} else if (targetTurningSpeed > 0 && Math.abs(angularDistance) < 1) {
+			incrementStep = true;
+		} else if (targetTime == 0 && targetTurningSpeed == 0) {
+			incrementStep = true;
+		}
+
+		if (incrementStep) {
+			targetTime = 0;
+			targetSpeed = 0;
+			targetAngle = 0;
+			targetTurningSpeed = 0;
+			autoStep = autoStep.next();
+			initAutoStep = true;
+		}
+	}
+
+	void driveForward(double speed, long time) {
+		if (initAutoStep) {
+			initAutoStep = false;
+			driveState = DriveState.Forward;
+			targetSpeed = speed;
+			targetTime = getTargetTime(time);
+			targetAngle = currentAngle;
+		}
+	}
+
+	void driveReverse(double speed, long time) {
+		if (initAutoStep) {
+			initAutoStep = false;
+			driveState = DriveState.Reverse;
+			targetSpeed = speed;
+			targetTime = getTargetTime(time);
+			targetAngle = currentAngle;
+		}
+	}
+
+	void slideLeft(double speed, long time) {
+		if (initAutoStep) {
+			initAutoStep = false;
+			driveState = DriveState.Left;
+			targetSpeed = speed;
+			targetTime = getTargetTime(time);
+			targetAngle = currentAngle;
+		}
+	}
+
+	void slideRight(double speed, long time) {
+		if (initAutoStep) {
+			initAutoStep = false;
+			driveState = DriveState.Right;
+			targetSpeed = speed;
+			targetTime = getTargetTime(time);
+			targetAngle = currentAngle;
+		}
+	}
+
+	void turnLeft(double speed, double angle) {
+		if (initAutoStep) {
+			initAutoStep = false;
+			driveState = DriveState.Turn;
+			targetTurningSpeed = speed;
+			targetAngle = getTargetAngle(currentAngle, -angle);
+		}
+	}
+
+	void turnRight(double speed, double angle) {
+		if (initAutoStep) {
+			initAutoStep = false;
+			driveState = DriveState.Turn;
+			targetTurningSpeed = speed;
+			targetAngle = getTargetAngle(currentAngle, angle);
+		}
+	}
+
+	void stop() {
+		if (initAutoStep) {
+			initAutoStep = false;
+			driveState = DriveState.Stopped;
+			targetTime = 0;
+			targetSpeed = 0;
+			targetAngle = 0;
+			targetTurningSpeed = 0;
+		}
+	}
+
+	long getTargetTime(long delta) {
+		return System.currentTimeMillis() + delta;
+	}
+
+	double getTargetAngle(double currentAngle, double delta) {
+
+		return (currentAngle + delta) % 360;
+	}
+
+	double getAngularDistanceFromTarget(double currentAngle, double targetAngle) {
+
+		double delta = targetAngle - currentAngle;
+
+		if (delta > 180)
+			delta -= 360;
+		if (delta < -180)
+			delta += 360;
+
+		return delta;
+	}
+
+	double getTurningSpeedFromAngularDistance(double delta) {
+
+		double t = targetTurningSpeed;
+
+		double d = Math.abs(delta);
+
+		if (d < 10) {
+			t = t * (d / 10);
+		}
+
+		return t;
 	}
 
 	@Override
@@ -311,7 +443,7 @@ public class Robot extends IterativeRobot {
 		// teleop starts running. If you want the autonomous to
 		// continue until interrupted by another command, remove
 		// this line or comment it out.
-		if (autoState != AutoState.Stop) {
+		if (driveState != DriveState.Stopped) {
 			if (USE_MECANUM_DRIVE) {
 				driveTrain.mecanumDrive_Cartesian(0, 0, 0, 180);
 			} else {
@@ -332,6 +464,10 @@ public class Robot extends IterativeRobot {
 
 		pdp.updateTable();
 
+		currentAngle = gyro.getAngle();
+
+		SmartDashboard.putNumber("Gyro Angle ", currentAngle);
+
 		driveJoystickButtons.updateState();
 		doorJoystickButtons.updateState();
 
@@ -346,9 +482,6 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putString("Left IR  ", pin_Status_L);
 		SmartDashboard.putString("Right IR ", pin_Status_R);
 
-		double angle = gyro.getAngle();
-		
-		SmartDashboard.putNumber("Gyro Angle ", angle);
 	}
 
 	/**
@@ -389,12 +522,10 @@ public class Robot extends IterativeRobot {
 
 	void doorPeriodic() {
 		if (doorJoystickButtons.isPressed(CLOSE_DOOR_BUTTON)) {
-			doorState = MotorState.Forward;
+			closeDoors();
 		} else if (doorJoystickButtons.isPressed(OPEN_DOOR_BUTTON)) {
-			doorState = MotorState.Reverse;
+			openDoors();
 		}
-		
-		setDoorStatus();
 
 		SmartDashboard.putNumber("Door Current", pdp.getCurrent(0));
 	}
@@ -439,7 +570,19 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putString("Winch Status", winchStatus);
 		/* Change # for real robot */
 	}
-	
+
+	void openDoors() {
+		doorState = MotorState.Reverse;
+
+		setDoorStatus();
+	}
+
+	void closeDoors() {
+		doorState = MotorState.Forward;
+
+		setDoorStatus();
+	}
+
 	void setDoorStatus() {
 		String doorStatus = "Stopped";
 

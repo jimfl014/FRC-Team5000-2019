@@ -272,15 +272,13 @@ public class Robot extends IterativeRobot {
 
 	void doStep() {
 
-		double angularDistance = getAngularDistanceFromTarget(currentAngle, targetAngle);
-
 		double x = 0;
 		double y = 0;
 		double t = 0;
 
+		double angularDistance = getAngularDistanceFromTarget(currentAngle, targetAngle);
+
 		switch (driveState) {
-		case Stopped:
-			break;
 
 		case Forward:
 			x = targetSpeed;
@@ -305,10 +303,14 @@ public class Robot extends IterativeRobot {
 		case Turn:
 			t = getTurningSpeedFromAngularDistance(angularDistance);
 			break;
-		}
 
-		double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
+		case Stopped:
+		default:		
+			break;
+		}
+	
 		if (USE_MECANUM_DRIVE) {
+			double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
 			driveTrain.mecanumDrive_Cartesian(x, y, t, gyroAngle);
 		} else {
 			driveTrain.arcadeDrive(-x, t);

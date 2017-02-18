@@ -643,7 +643,7 @@ public class Robot extends IterativeRobot {
 			SmartDashboard.putNumber("T ", t);
 			SmartDashboard.putNumber("D ", 0);
 
-			driveTrain.mecanumDrive_Cartesian(x * Math.abs(x), -(y * Math.abs(y)), -(t * Math.abs(t)), gyroAngle);
+			driveTrain.mecanumDrive_Cartesian(-x * Math.abs(x), -(y * Math.abs(y)), -(t * Math.abs(t)), gyroAngle);
 			// changed from x*x,y*y,t*t, orientation changed to 180 from 0 2/8
 			// JF
 		} else {

@@ -101,8 +101,8 @@ public class Robot extends IterativeRobot {
 	double angularDistance = 0;
 	boolean watchForReflectiveStrips = false;
 	DriveState driveState = DriveState.Stopped;
-	double baseDriveLevel = 0.2;
-	double baseTwistLevel = 0.37;
+	double baseDriveLevel = 0.25;
+	double baseTwistLevel = 0.40;
 
 	CANTalon driveCimLF, driveCimLR, driveCimRF, driveCimRR;
 	Spark door, winch;
@@ -260,7 +260,7 @@ public class Robot extends IterativeRobot {
 			incrementStep = true;
 		} else if (targetTurningSpeed > 0 && Math.abs(angularDistance) < 1) {
 			incrementStep = true;
-		} else if (watchForReflectiveStrips && leftIRSensor && rightIRSensor) {
+		} else if (watchForReflectiveStrips && (leftIRSensor || rightIRSensor)) {
 			incrementStep = true;
 		}
 
@@ -355,14 +355,15 @@ public class Robot extends IterativeRobot {
 
 		case Step2:
 			turnLeft(0.10, 120);
-//			watchForReflectiveStrips = true;
+			watchForReflectiveStrips = true;
 			break;
 
 		case Step3:
-			stop();
+			driveForward(0.10, 2000);
 			break;
 
 		case Step4:
+			openDoors();
 			stop();
 			break;
 
@@ -551,7 +552,7 @@ public class Robot extends IterativeRobot {
 
 	double getTurningSpeedFromAngularDistance(double delta) {
 
-		double t = (delta < 0) ? -targetTurningSpeed : targetTurningSpeed;
+		double t = (delta < 0) ? targetTurningSpeed : -targetTurningSpeed;
 
 		double d = Math.abs(delta);
 

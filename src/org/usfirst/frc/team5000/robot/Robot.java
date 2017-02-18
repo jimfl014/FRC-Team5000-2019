@@ -101,8 +101,8 @@ public class Robot extends IterativeRobot {
 	double angularDistance = 0;
 	boolean watchForReflectiveStrips = false;
 	DriveState driveState = DriveState.Stopped;
-	double baseDriveLevel = 0;
-	double baseTwistLevel = 0;
+	double baseDriveLevel = 0.2;
+	double baseTwistLevel = 0.37;
 
 	CANTalon driveCimLF, driveCimLR, driveCimRF, driveCimRR;
 	Spark door, winch;
@@ -243,6 +243,9 @@ public class Robot extends IterativeRobot {
 
 		angularDistance = getAngularDistanceFromTarget(currentAngle, targetAngle);
 
+		SmartDashboard.putNumber("Target Angle ", targetAngle);
+		SmartDashboard.putNumber("D ", angularDistance);
+		
 		leftIRSensor = IR_Sensor_L.get();
 		rightIRSensor = IR_Sensor_R.get();
 
@@ -346,11 +349,13 @@ public class Robot extends IterativeRobot {
 			break;
 
 		case Step1:
-			turnLeft(0.10, 90);
+			turnRight(0.10, 120);
+			watchForReflectiveStrips = true;
 			break;
 
 		case Step2:
-			stop();
+			turnLeft(0.10, 120);
+//			watchForReflectiveStrips = true;
 			break;
 
 		case Step3:
@@ -372,27 +377,30 @@ public class Robot extends IterativeRobot {
 		double x = 0;
 		double y = 0;
 		double t = 0;
+		double b = 0;
 
 		switch (driveState) {
 
 		case Forward:
 			y = targetSpeed;
-			t = angularDistance * Kp;
+//			t = -angularDistance * Kp;
 			break;
 
 		case Reverse:
 			y = -targetSpeed;
-			t = angularDistance * Kp;
+//			t = -angularDistance * Kp;
 			break;
 
 		case Left:
 			x = -targetSpeed;
-			t = angularDistance * Kp;
+//			t = -angularDistance * Kp;
+			b = SmartDashboard.getNumber("Base Drive Level ", 0);
 			break;
 
 		case Right:
 			x = targetSpeed;
-			t = angularDistance * Kp;
+//			t = -angularDistance * Kp;
+			b = SmartDashboard.getNumber("Base Drive Level ", 0);
 			break;
 
 		case Turn:
@@ -404,25 +412,24 @@ public class Robot extends IterativeRobot {
 			break;
 		}
 
-		baseDriveLevel = SmartDashboard.getNumber("Base Drive Level ", 0);
 		baseTwistLevel = SmartDashboard.getNumber("Base Twist Level ", 0);
 
-		baseDriveLevel = Math.max( 0.0, baseDriveLevel );
-		baseDriveLevel = Math.min( 1.0, baseDriveLevel );
+		b = Math.max( 0.0, b );
+		b = Math.min( 1.0, b );
 
 		baseTwistLevel = Math.max( 0.0, baseTwistLevel );
 		baseTwistLevel = Math.min( 1.0, baseTwistLevel );
 
 		if (x < 0) {
-			x = ((1.0 - baseDriveLevel) * x) - baseDriveLevel;
+			x = ((1.0 - b) * x) - b;
 		} else if (x > 0) {
-			x = ((1.0 - baseDriveLevel) * x) + baseDriveLevel;
+			x = ((1.0 - b) * x) + b;
 		}
 
 		if (y < 0) {
-			y = ((1.0 - baseDriveLevel) * y) - baseDriveLevel;
+			y = ((1.0 - b) * y) - b;
 		} else if (y > 0) {
-			y = ((1.0 - baseDriveLevel) * y) + baseDriveLevel;
+			y = ((1.0 - b) * y) + b;
 		}
 
 		if (t < 0) {
@@ -434,7 +441,6 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("X ", x);
 		SmartDashboard.putNumber("Y ", y);
 		SmartDashboard.putNumber("T ", t);
-		SmartDashboard.putNumber("D ", angularDistance);
 
 		if (USE_MECANUM_DRIVE) {
 			double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
@@ -545,7 +551,7 @@ public class Robot extends IterativeRobot {
 
 	double getTurningSpeedFromAngularDistance(double delta) {
 
-		double t = targetTurningSpeed;
+		double t = (delta < 0) ? -targetTurningSpeed : targetTurningSpeed;
 
 		double d = Math.abs(delta);
 

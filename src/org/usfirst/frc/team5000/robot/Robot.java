@@ -1,7 +1,9 @@
 
 package org.usfirst.frc.team5000.robot;
 
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.AnalogGyro;
+import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
@@ -118,7 +120,7 @@ public class Robot extends IterativeRobot {
 	boolean leftIRSensor, rightIRSensor;
 	long quickReleaseEndTime = 0;
 
-	AnalogGyro gyro;
+	Gyro gyro;
 
 	/**
 	 * This function is run when the robot is first started up and should be
@@ -168,7 +170,9 @@ public class Robot extends IterativeRobot {
 		IR_Sensor_L = new DigitalInput(0); // Added 2/8 JF
 		IR_Sensor_R = new DigitalInput(1);
 
-		gyro = new AnalogGyro(0);
+                //		gyro = new AnalogGyro(0);
+                //		gyro = new ADXRS450_Gyro(0);
+		gyro = new ADXRS450_Gyro();
 		// gyro.calibrate();
 
 		SmartDashboard.putString("Camera 2", driveDirection == MotorState.Forward ? "Forward" : "Reverse");
@@ -283,11 +287,30 @@ public class Robot extends IterativeRobot {
 	}
 
 	void leftAutoProgram() {
-		centerAutoProgram();
-	}
+		switch (autoStep) {
+		case Start:
+			break;
 
-	void rightAutoProgram() {
-		centerAutoProgram();
+		case Step1:
+			driveForward(0.10, 2000);
+			break;
+
+		case Step2:
+			driveReverse(0.10, 2000);
+			break;
+
+		case Step3:
+			stop();
+			break;
+
+		case Step4:
+			stop();
+			break;
+
+		case Stop:
+			stop();
+			break;
+		}
 	}
 
 	void centerAutoProgram() {
@@ -297,12 +320,37 @@ public class Robot extends IterativeRobot {
 
 		case Step1:
 			slideRight(0.10, 2000);
-			// turnLeft(0.60, 90);
 			break;
 
 		case Step2:
 			slideLeft(0.10, 2000);
-			// turnRight(0.60, 90);
+			break;
+
+		case Step3:
+			stop();
+			break;
+
+		case Step4:
+			stop();
+			break;
+
+		case Stop:
+			stop();
+			break;
+		}
+	}
+
+	void rightAutoProgram() {
+		switch (autoStep) {
+		case Start:
+			break;
+
+		case Step1:
+			turnLeft(0.10, 90);
+			break;
+
+		case Step2:
+			stop();
 			break;
 
 		case Step3:
@@ -359,17 +407,11 @@ public class Robot extends IterativeRobot {
 		baseDriveLevel = SmartDashboard.getNumber("Base Drive Level ", 0);
 		baseTwistLevel = SmartDashboard.getNumber("Base Twist Level ", 0);
 
-		if (baseDriveLevel < 0) {
-			baseDriveLevel = 0;
-		} else if (baseDriveLevel > 1.0) {
-			baseDriveLevel = 1.0;
-		}
+		baseDriveLevel = Math.max( 0.0, baseDriveLevel );
+		baseDriveLevel = Math.min( 1.0, baseDriveLevel );
 
-		if (baseTwistLevel < 0) {
-			baseTwistLevel = 0;
-		} else if (baseTwistLevel > 1.0) {
-			baseTwistLevel = 1.0;
-		}
+		baseTwistLevel = Math.max( 0.0, baseTwistLevel );
+		baseTwistLevel = Math.min( 1.0, baseTwistLevel );
 
 		if (x < 0) {
 			x = ((1.0 - baseDriveLevel) * x) - baseDriveLevel;

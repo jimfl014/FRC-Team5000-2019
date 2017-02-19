@@ -2,7 +2,6 @@
 package org.usfirst.frc.team5000.robot;
 
 import edu.wpi.first.wpilibj.interfaces.Gyro;
-import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.IterativeRobot;
@@ -35,7 +34,7 @@ public class Robot extends IterativeRobot {
 	};
 
 	static enum AutoStep {
-		Start, Step1, Step2, Step3, Step4, Stop;
+		Start, Step1, Step2, Step3, Step4, Step5, Step6, Step7, Step8, Step9, Step10, Stop;
 
 		public AutoStep next() {
 			switch (this) {
@@ -47,6 +46,18 @@ public class Robot extends IterativeRobot {
 				return Step3;
 			case Step3:
 				return Step4;
+			case Step4:
+				return Step5;
+			case Step5:
+				return Step6;
+			case Step6:
+				return Step7;
+			case Step7:
+				return Step8;
+			case Step8:
+				return Step9;
+			case Step9:
+				return Step10;
 			default:
 				return Stop;
 			}
@@ -64,6 +75,18 @@ public class Robot extends IterativeRobot {
 				return "Step3";
 			case Step4:
 				return "Step4";
+			case Step5:
+				return "Step5";
+			case Step6:
+				return "Step6";
+			case Step7:
+				return "Step7";
+			case Step8:
+				return "Step8";
+			case Step9:
+				return "Step9";
+			case Step10:
+				return "Step10";
 			default:
 				return "Stop";
 			}
@@ -101,8 +124,8 @@ public class Robot extends IterativeRobot {
 	double angularDistance = 0;
 	boolean watchForReflectiveStrips = false;
 	DriveState driveState = DriveState.Stopped;
-	double baseDriveLevel = 0;
-	double baseTwistLevel = 0;
+	double baseDriveLevel = 0.25;
+	double baseTwistLevel = 0.40;
 
 	CANTalon driveCimLF, driveCimLR, driveCimRF, driveCimRR;
 	Spark door, winch;
@@ -116,7 +139,7 @@ public class Robot extends IterativeRobot {
 	CameraServer cameraServer;
 	PowerDistributionPanel pdp;
 
-	DigitalInput IR_Sensor_L, IR_Sensor_R; // Added 2/8 JF
+	DigitalInput irSensorLeft, irSensorRight; // Added 2/8 JF
 	boolean leftIRSensor, rightIRSensor;
 	long quickReleaseEndTime = 0;
 
@@ -167,21 +190,18 @@ public class Robot extends IterativeRobot {
 		pdp = new PowerDistributionPanel();
 		pdp.startLiveWindowMode();
 
-		IR_Sensor_L = new DigitalInput(0); // Added 2/8 JF
-		IR_Sensor_R = new DigitalInput(1);
+		irSensorLeft = new DigitalInput(0); // Added 2/8 JF
+		irSensorRight = new DigitalInput(1);
 
-                //		gyro = new AnalogGyro(0);
-                //		gyro = new ADXRS450_Gyro(0);
 		gyro = new ADXRS450_Gyro();
-		// gyro.calibrate();
 
 		SmartDashboard.putString("Camera 2", driveDirection == MotorState.Forward ? "Forward" : "Reverse");
 		SmartDashboard.putString("Camera 1", driveDirection == MotorState.Reverse ? "Forward" : "Reverse");
 
 		SmartDashboard.putString("Auto Step ", AutoStep.Start.toString());
 
-		leftIRSensor = IR_Sensor_L.get();
-		rightIRSensor = IR_Sensor_R.get();
+		leftIRSensor = irSensorLeft.get();
+		rightIRSensor = irSensorRight.get();
 
 		SmartDashboard.putString("Left IR  ", Boolean.toString(leftIRSensor));
 		SmartDashboard.putString("Right IR ", Boolean.toString(rightIRSensor));
@@ -220,13 +240,13 @@ public class Robot extends IterativeRobot {
 		autoSelected = chooser.getSelected();
 		System.out.println("Auto selected: " + autoSelected);
 
-		gyro.reset();
-
 		autoStep = AutoStep.Start;
-		initializeForNextStep();
-		driveDirection = MotorState.Reverse;
-
 		SmartDashboard.putString("Auto Step ", autoStep.toString());
+		initializeForNextStep();
+
+		gyro.reset();
+		driveDirection = MotorState.Reverse;
+                closeDoors();
 	}
 
 	/**
@@ -237,14 +257,15 @@ public class Robot extends IterativeRobot {
 
 		currentAngle = gyro.getAngle();
 
-		String strDouble = String.format("%.2f", currentAngle);
-
-		SmartDashboard.putString("Gyro Angle2 ", strDouble);
+		SmartDashboard.putString("Gyro Angle2 ", String.format("%.2f", currentAngle));
 
 		angularDistance = getAngularDistanceFromTarget(currentAngle, targetAngle);
 
-		leftIRSensor = IR_Sensor_L.get();
-		rightIRSensor = IR_Sensor_R.get();
+		SmartDashboard.putNumber("Target Angle ", targetAngle);
+		SmartDashboard.putNumber("D ", angularDistance);
+		
+		leftIRSensor = irSensorLeft.get();
+		rightIRSensor = irSensorRight.get();
 
 		SmartDashboard.putString("Left IR  ", Boolean.toString(leftIRSensor));
 		SmartDashboard.putString("Right IR ", Boolean.toString(rightIRSensor));
@@ -292,22 +313,16 @@ public class Robot extends IterativeRobot {
 			break;
 
 		case Step1:
-			driveForward(0.10, 2000);
+			driveForward(0.1, 2100);
 			break;
 
 		case Step2:
-			driveReverse(0.10, 2000);
-			break;
-
-		case Step3:
-			stop();
-			break;
-
-		case Step4:
-			stop();
+			turnRight(0.10, 45);
+//			watchForReflectiveStrips = true;
 			break;
 
 		case Stop:
+		default:
 			stop();
 			break;
 		}
@@ -319,22 +334,11 @@ public class Robot extends IterativeRobot {
 			break;
 
 		case Step1:
-			slideRight(0.10, 2000);
-			break;
-
-		case Step2:
-			slideLeft(0.10, 2000);
-			break;
-
-		case Step3:
-			stop();
-			break;
-
-		case Step4:
-			stop();
+			driveForward( 0.05, 1800 );
 			break;
 
 		case Stop:
+		default:
 			stop();
 			break;
 		}
@@ -346,22 +350,16 @@ public class Robot extends IterativeRobot {
 			break;
 
 		case Step1:
-			turnLeft(0.10, 90);
+			driveForward(0.1, 2100);
 			break;
 
 		case Step2:
-			stop();
-			break;
-
-		case Step3:
-			stop();
-			break;
-
-		case Step4:
-			stop();
+			turnLeft(0.10, 45);
+//			watchForReflectiveStrips = true;
 			break;
 
 		case Stop:
+		default:
 			stop();
 			break;
 		}
@@ -377,22 +375,22 @@ public class Robot extends IterativeRobot {
 
 		case Forward:
 			y = targetSpeed;
-			t = angularDistance * Kp;
+//			t = -angularDistance * Kp;
 			break;
 
 		case Reverse:
 			y = -targetSpeed;
-			t = angularDistance * Kp;
+//			t = -angularDistance * Kp;
 			break;
 
 		case Left:
-			x = -targetSpeed;
-			t = angularDistance * Kp;
+			x = targetSpeed;
+//			t = -angularDistance * Kp;
 			break;
 
 		case Right:
-			x = targetSpeed;
-			t = angularDistance * Kp;
+			x = -targetSpeed;
+//			t = -angularDistance * Kp;
 			break;
 
 		case Turn:
@@ -434,7 +432,6 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("X ", x);
 		SmartDashboard.putNumber("Y ", y);
 		SmartDashboard.putNumber("T ", t);
-		SmartDashboard.putNumber("D ", angularDistance);
 
 		if (USE_MECANUM_DRIVE) {
 			double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
@@ -522,6 +519,17 @@ public class Robot extends IterativeRobot {
 		}
 	}
 
+	void pause( long time ) {
+		if (initAutoStep) {
+			initAutoStep = false;
+			driveState = DriveState.Forward;
+			targetTime = getTargetTime(time);
+			targetSpeed = 0;
+			targetAngle = 0;
+			targetTurningSpeed = 0;
+		}
+	}
+
 	long getTargetTime(long delta) {
 		return System.currentTimeMillis() + delta;
 	}
@@ -545,7 +553,7 @@ public class Robot extends IterativeRobot {
 
 	double getTurningSpeedFromAngularDistance(double delta) {
 
-		double t = targetTurningSpeed;
+		double t = (delta < 0) ? targetTurningSpeed : -targetTurningSpeed;
 
 		double d = Math.abs(delta);
 
@@ -571,8 +579,8 @@ public class Robot extends IterativeRobot {
 		}
 
 		gyro.reset();
-		doorState = MotorState.Forward;
-		setDoorStatus();
+		driveDirection = MotorState.Reverse;
+		closeDoors();
 	}
 
 	/**
@@ -585,9 +593,7 @@ public class Robot extends IterativeRobot {
 
 		currentAngle = gyro.getAngle();
 
-		String strDouble = String.format("%.2f", currentAngle);
-
-		SmartDashboard.putString("Gyro Angle2 ", strDouble);
+		SmartDashboard.putString("Gyro Angle2 ", String.format("%.2f", currentAngle));
 
 		driveJoystickButtons.updateState();
 		doorJoystickButtons.updateState();
@@ -596,12 +602,11 @@ public class Robot extends IterativeRobot {
 		doorPeriodic();
 		winchPeriodic();
 
-		// Section below added 2/8 JF to get and display IR sensor data
-		String pin_Status_L = new Boolean(IR_Sensor_L.get()).toString();
-		String pin_Status_R = new Boolean(IR_Sensor_R.get()).toString();
+		leftIRSensor = irSensorLeft.get();
+		rightIRSensor = irSensorRight.get();
 
-		SmartDashboard.putString("Left IR  ", pin_Status_L);
-		SmartDashboard.putString("Right IR ", pin_Status_R);
+		SmartDashboard.putString("Left IR  ", Boolean.toString(leftIRSensor));
+		SmartDashboard.putString("Right IR ", Boolean.toString(rightIRSensor));
 	}
 
 	/**
@@ -636,7 +641,7 @@ public class Robot extends IterativeRobot {
 			SmartDashboard.putNumber("T ", t);
 			SmartDashboard.putNumber("D ", 0);
 
-			driveTrain.mecanumDrive_Cartesian(x * Math.abs(x), -(y * Math.abs(y)), -(t * Math.abs(t)), gyroAngle);
+			driveTrain.mecanumDrive_Cartesian(-x * Math.abs(x), -(y * Math.abs(y)), -(t * Math.abs(t)) * 0.5, gyroAngle);
 			// changed from x*x,y*y,t*t, orientation changed to 180 from 0 2/8
 			// JF
 		} else {

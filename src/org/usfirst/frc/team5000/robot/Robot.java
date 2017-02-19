@@ -246,7 +246,7 @@ public class Robot extends IterativeRobot {
 
 		gyro.reset();
 		driveDirection = MotorState.Reverse;
-                closeDoors();
+		closeDoors();
 	}
 
 	/**
@@ -263,7 +263,7 @@ public class Robot extends IterativeRobot {
 
 		SmartDashboard.putNumber("Target Angle ", targetAngle);
 		SmartDashboard.putNumber("D ", angularDistance);
-		
+
 		leftIRSensor = irSensorLeft.get();
 		rightIRSensor = irSensorRight.get();
 

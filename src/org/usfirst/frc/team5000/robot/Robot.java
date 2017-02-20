@@ -97,8 +97,8 @@ public class Robot extends IterativeRobot {
 
 	static final double FORWARD_WINCH_SPEED = -0.7;
 	static final double REVERSE_WINCH_SPEED = 0.6;
-	static final double FORWARD_DOOR_SPEED = 0.5; // 2/15 was 0.7
-	static final double REVERSE_DOOR_SPEED = -0.5; // 2/15 was -0.7
+	static final double FORWARD_DOOR_SPEED = 0.3; // 2/15 was 0.7
+	static final double REVERSE_DOOR_SPEED = -0.3; // 2/15 was -0.7
 	static final boolean USE_MECANUM_DRIVE = true;
 	static final int DRIVE_DIRECTION_SWITCH_BUTTON = 2;
 	static final int OPEN_DOOR_BUTTON = 3;
@@ -124,8 +124,8 @@ public class Robot extends IterativeRobot {
 	double angularDistance = 0;
 	boolean watchForReflectiveStrips = false;
 	DriveState driveState = DriveState.Stopped;
-	double baseDriveLevel = 0.25;
-	double baseTwistLevel = 0.40;
+	double baseDriveLevel = 0.05;
+	double baseTwistLevel = 0.15;
 
 	CANTalon driveCimLF, driveCimLR, driveCimRF, driveCimRR;
 	Spark door, winch;
@@ -313,17 +313,30 @@ public class Robot extends IterativeRobot {
 			break;
 
 		case Step1:
-			driveForward(0.1, 2100);
+			driveForward(0.3, 2300);
 			break;
 
 		case Step2:
-			turnRight(0.10, 45);
-//			watchForReflectiveStrips = true;
+			turnRight(0.10, 90);
+			watchForReflectiveStrips = true;
 			break;
+
+		case Step3:
+			driveForward(0.2, 2000);
+			break;
+
+		case Step4:
+			pause(1000);
+			openDoors();
+			break;
+			
+		case Step5:
+			driveReverse(0.3, 1000);
 
 		case Stop:
 		default:
 			stop();
+			closeDoors();
 			break;
 		}
 	}
@@ -350,17 +363,30 @@ public class Robot extends IterativeRobot {
 			break;
 
 		case Step1:
-			driveForward(0.1, 2100);
+			driveForward(0.3, 2300);
 			break;
 
 		case Step2:
-			turnLeft(0.10, 45);
-//			watchForReflectiveStrips = true;
+			turnLeft(0.10, 90);
+			watchForReflectiveStrips = true;
 			break;
+
+		case Step3:
+			driveForward(0.2, 2000);
+			break;
+
+		case Step4:
+			pause(1000);
+			openDoors();
+			break;
+			
+		case Step5:
+			driveReverse(0.3, 1000);
 
 		case Stop:
 		default:
 			stop();
+			closeDoors();
 			break;
 		}
 	}

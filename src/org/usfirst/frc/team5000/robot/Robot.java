@@ -126,6 +126,9 @@ public class Robot extends IterativeRobot {
 	DriveState driveState = DriveState.Stopped;
 	double baseDriveLevel = 0.05;
 	double baseTwistLevel = 0.15;
+	long beforeTurnTime = 2300;
+	long afterTurnTime = 2000;
+	long centerDriveTime = 1800;
 
 	CANTalon driveCimLF, driveCimLR, driveCimRF, driveCimRR;
 	Spark door, winch;
@@ -208,6 +211,10 @@ public class Robot extends IterativeRobot {
 
 		SmartDashboard.putNumber("Base Drive Level ", baseDriveLevel);
 		SmartDashboard.putNumber("Base Twist Level ", baseTwistLevel);
+
+		SmartDashboard.putString("Before Turn Time ", String.valueOf(beforeTurnTime));
+		SmartDashboard.putString("After Turn Time ", String.valueOf(afterTurnTime));
+		SmartDashboard.putString("Center Drive Time ", String.valueOf(centerDriveTime));
 	}
 
 	/**
@@ -308,12 +315,21 @@ public class Robot extends IterativeRobot {
 	}
 
 	void leftAutoProgram() {
+
+		long driveTime = 0;
+
 		switch (autoStep) {
 		case Start:
 			break;
 
 		case Step1:
-			driveForward(0.3, 2300);
+			try {
+				driveTime = Long.parseLong(SmartDashboard.getString("Before Turn Time ", "bad"));
+			} catch (NumberFormatException e) {
+				driveTime = beforeTurnTime;
+			}
+
+			driveForward(0.3, driveTime);
 			break;
 
 		case Step2:
@@ -322,14 +338,20 @@ public class Robot extends IterativeRobot {
 			break;
 
 		case Step3:
-			driveForward(0.2, 2000);
+			try {
+				driveTime = Long.parseLong(SmartDashboard.getString("After Turn Time ", "bad"));
+			} catch (NumberFormatException e) {
+				driveTime = afterTurnTime;
+			}
+
+			driveForward(0.2, driveTime);
 			break;
 
 		case Step4:
 			pause(1000);
 			openDoors();
 			break;
-			
+
 		case Step5:
 			driveReverse(0.3, 1000);
 
@@ -342,12 +364,19 @@ public class Robot extends IterativeRobot {
 	}
 
 	void centerAutoProgram() {
+		long driveTime = 0;
+
 		switch (autoStep) {
 		case Start:
 			break;
 
 		case Step1:
-			driveForward( 0.05, 1800 );
+			try {
+				driveTime = Long.parseLong(SmartDashboard.getString("Center Drive Time ", "bad"));
+			} catch (NumberFormatException e) {
+				driveTime = centerDriveTime;
+			}
+			driveForward( 0.05, driveTime );
 			break;
 
 		case Stop:
@@ -358,12 +387,20 @@ public class Robot extends IterativeRobot {
 	}
 
 	void rightAutoProgram() {
+		long driveTime = 0;
+
 		switch (autoStep) {
 		case Start:
 			break;
 
 		case Step1:
-			driveForward(0.3, 2300);
+			try {
+				driveTime = Long.parseLong(SmartDashboard.getString("Before Turn Time ", "bad"));
+			} catch (NumberFormatException e) {
+				driveTime = beforeTurnTime;
+			}
+
+			driveForward(0.3, driveTime);
 			break;
 
 		case Step2:
@@ -372,14 +409,20 @@ public class Robot extends IterativeRobot {
 			break;
 
 		case Step3:
-			driveForward(0.2, 2000);
+			try {
+				driveTime = Long.parseLong(SmartDashboard.getString("After Turn Time ", "bad"));
+			} catch (NumberFormatException e) {
+				driveTime = afterTurnTime;
+			}
+
+			driveForward(0.2, driveTime);
 			break;
 
 		case Step4:
 			pause(1000);
 			openDoors();
 			break;
-			
+
 		case Step5:
 			driveReverse(0.3, 1000);
 
@@ -401,22 +444,22 @@ public class Robot extends IterativeRobot {
 
 		case Forward:
 			y = targetSpeed;
-//			t = -angularDistance * Kp;
+			//			t = -angularDistance * Kp;
 			break;
 
 		case Reverse:
 			y = -targetSpeed;
-//			t = -angularDistance * Kp;
+			//			t = -angularDistance * Kp;
 			break;
 
 		case Left:
 			x = targetSpeed;
-//			t = -angularDistance * Kp;
+			//			t = -angularDistance * Kp;
 			break;
 
 		case Right:
 			x = -targetSpeed;
-//			t = -angularDistance * Kp;
+			//			t = -angularDistance * Kp;
 			break;
 
 		case Turn:

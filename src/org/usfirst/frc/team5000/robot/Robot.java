@@ -9,7 +9,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PowerDistributionPanel;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Spark;
-import com.ctre.CANTalon;
+import com.ctre.TalonSRX;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -99,7 +99,6 @@ public class Robot extends IterativeRobot {
 	static final double REVERSE_WINCH_SPEED = 0.6;
 	static final double FORWARD_DOOR_SPEED = 0.3; // 2/15 was 0.7
 	static final double REVERSE_DOOR_SPEED = -0.3; // 2/15 was -0.7
-	static final boolean USE_MECANUM_DRIVE = true;
 	static final int DRIVE_DIRECTION_SWITCH_BUTTON = 2;
 	static final int OPEN_DOOR_BUTTON = 3;
 	static final int CLOSE_DOOR_BUTTON = 2;
@@ -130,7 +129,7 @@ public class Robot extends IterativeRobot {
 	long afterTurnTime = 2000;
 	long centerDriveTime = 1800;
 
-	CANTalon driveCimLF, driveCimLR, driveCimRF, driveCimRR;
+	TalonSRX driveCimLF, driveCimLR, driveCimRF, driveCimRR;
 	Spark door, winch;
 	Joystick driveJoystick, doorJoystick;
 	HHJoystickButtons driveJoystickButtons, doorJoystickButtons;
@@ -166,21 +165,14 @@ public class Robot extends IterativeRobot {
 		driveJoystickButtons = new HHJoystickButtons(driveJoystick, 10);
 		doorJoystickButtons = new HHJoystickButtons(doorJoystick, 10);
 
-		driveCimLF = new CANTalon(2);
-		driveCimLR = new CANTalon(3);
-		driveCimRF = new CANTalon(1);
-		driveCimRR = new CANTalon(0);
+		driveCimLF = new TalonSRX(2);
+		driveCimLR = new TalonSRX(3);
+		driveCimRF = new TalonSRX(1);
+		driveCimRR = new TalonSRX(0);
 
-		driveCimLF.setInverted(true);
-		if (USE_MECANUM_DRIVE) {
-			driveCimLR.setInverted(true);
-		}
 
-		if (USE_MECANUM_DRIVE) {
+		
 			driveTrain = new RobotDrive(driveCimLF, driveCimLR, driveCimRF, driveCimRR);
-		} else {
-			driveTrain = new RobotDrive(driveCimRF, driveCimLR);
-		}
 
 		door = new Spark(0);
 		winch = new Spark(1);
@@ -502,12 +494,8 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("Y ", y);
 		SmartDashboard.putNumber("T ", t);
 
-		if (USE_MECANUM_DRIVE) {
-			double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
-			driveTrain.mecanumDrive_Cartesian(x, y, t, gyroAngle);
-		} else {
+		
 			driveTrain.arcadeDrive(-x, t);
-		}
 	}
 
 	void initializeForNextStep() {
@@ -640,11 +628,7 @@ public class Robot extends IterativeRobot {
 		// continue until interrupted by another command, remove
 		// this line or comment it out.
 		if (driveState != DriveState.Stopped) {
-			if (USE_MECANUM_DRIVE) {
-				driveTrain.mecanumDrive_Cartesian(0, 0, 0, 180);
-			} else {
 				driveTrain.stopMotor();
-			}
 		}
 
 		gyro.reset();
@@ -686,36 +670,7 @@ public class Robot extends IterativeRobot {
 	}
 
 	void drivePeriodic() {
-		if (USE_MECANUM_DRIVE) {
-
-			if (driveJoystickButtons.isPressed(DRIVE_DIRECTION_SWITCH_BUTTON)) {
-				if (driveDirection == MotorState.Forward) {
-					driveDirection = MotorState.Reverse;
-				} else {
-					driveDirection = MotorState.Forward;
-				}
-
-				SmartDashboard.putString("Camera 2", driveDirection == MotorState.Forward ? "Forward" : "Reverse");
-				SmartDashboard.putString("Camera 1", driveDirection == MotorState.Reverse ? "Forward" : "Reverse");
-			}
-
-			double gyroAngle = (driveDirection == MotorState.Forward) ? 180 : 0;
-
-			double x = driveJoystick.getX();
-			double y = driveJoystick.getY();
-			double t = driveJoystick.getTwist();
-
-			SmartDashboard.putNumber("X ", x);
-			SmartDashboard.putNumber("Y ", y);
-			SmartDashboard.putNumber("T ", t);
-			SmartDashboard.putNumber("D ", 0);
-
-			driveTrain.mecanumDrive_Cartesian(-x * Math.abs(x), -(y * Math.abs(y)), -(t * Math.abs(t)) * 0.5, gyroAngle);
-			// changed from x*x,y*y,t*t, orientation changed to 180 from 0 2/8
-			// JF
-		} else {
 			driveTrain.arcadeDrive(driveJoystick);
-		}
 	}
 
 	void doorPeriodic() {

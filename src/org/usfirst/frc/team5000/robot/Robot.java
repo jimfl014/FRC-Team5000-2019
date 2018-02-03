@@ -180,6 +180,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	
 	PIDController turnController;
 	double rotateToAngleRate;
+	boolean rotateToAngle = false;
 	
 	ClawState clawState;
     
@@ -243,8 +244,10 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		
 		SmartDashboard.putBoolean("IMU_Connected", ahrs.isConnected());
 		SmartDashboard.putNumber("IMU_Angle", ahrs.getAngle());
-		
-		boolean rotateToAngle = false;
+		SmartDashboard.putBoolean("PID enabled", turnController.isEnabled());
+		SmartDashboard.putNumber("PID setPoint", turnController.getSetpoint());
+		SmartDashboard.putNumber("PID delta", turnController.getDeltaSetpoint());
+		SmartDashboard.putNumber("PID rotateToAngleRate", rotateToAngleRate);
 		
 		if(driveJoystickButtons.isPressed(resetrotate)){
 			ahrs.reset();
@@ -262,6 +265,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		} else if (driveJoystickButtons.isPressed(rotatetwoseventy)){
 			turnController.setSetpoint(-90.0f);
 			rotateToAngle = true;
+		} else if (rotateToAngle && turnController.onTarget()) {
+			rotateToAngle = false;
 		}
 
 		double currentRotationRate;

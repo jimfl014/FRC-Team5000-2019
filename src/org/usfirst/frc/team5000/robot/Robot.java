@@ -6,10 +6,14 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.kauailabs.navx.frc.AHRS;
+import edu.wpi.first.wpilibj.I2C;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.PIDController;
+import edu.wpi.first.wpilibj.PIDOutput;
+import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.SerialPort.Port;
 
 
@@ -17,12 +21,16 @@ import edu.wpi.first.wpilibj.SerialPort.Port;
  * The VM is configured to automatically run this class, and to call the
  * functions corresponding to each mode, as described in the IterativeRobot
  * documentation. If you change the name of this class or the package after
- * creating this project, you must also update the manifest file in the resource
- * directory.
+ * creating this project, you must also update the build.properties file in the
+ * project.
  */
-public class Robot extends IterativeRobot {
+public class Robot extends IterativeRobot implements PIDOutput {
     
 	// Enums
+	static enum ClawState {
+		InitialOpen, Close, SecondOpen, Push
+	}
+
 	static enum MotorState {
 		Stopped, Forward, Reverse
 	};
@@ -108,6 +116,33 @@ public class Robot extends IterativeRobot {
 	static final String RIGHT_AUTO = "Right";
 	static final double Kp = 0.03;
 
+	static final int forwardChannel1 = 0; //this is open
+	static final int reverseChannel1 = 1; //this is close
+	static final int armsopen = 1;
+	static final int armsclose = 2;
+	static final int forwardChannel2 = 2; //this is out
+	static final int reverseChannel2 = 3; //this is in
+	static final long delaybeforepush = 100;
+	static final long delaybeforeretract = 500;
+	
+	static final int resetrotate = 4;
+	static final int rotatezero = 5;
+	static final int rotateninety = 6;
+	static final int rotateoneeighty = 7;
+	static final int rotatetwoseventy = 8;
+    
+	static final int actuator1FWD = 2;
+	static final int actuator1REV = 3;
+	//static final int actuator2FWD = 4;
+	//static final int actuator2REV = 5;
+			
+	static final double kP = 0.03;
+	static final double kI = 0.00;
+	static final double kD = 0.00;
+	static final double kF = 0.00;
+	
+	static final double kToleranceDegrees = 2.0f;
+
 	// Variables
 	final String defaultAuto = "Default";
 	final String customAuto = "My Auto";
@@ -136,19 +171,18 @@ public class Robot extends IterativeRobot {
 	HHJoystickButtons driveJoystickButtons;
 	DifferentialDrive driveTrain;
 	
-	DoubleSolenoid actuator1, actuator2;
-	
-	static final int forwardChannel1 = 0;
-	static final int reverseChannel1 = 1;
-	static final int forwardChannel2 = 2;
-	static final int reverseChannel2 = 3;
-	static final int actuator1FWD = 2;
-	static final int actuator1REV = 3;
-	//static final int actuator2FWD = 4;
-	//static final int actuator2REV = 5;
-			
+	DoubleSolenoid arms, pusher;
+
+	long firstdelay = 0;
+	long seconddelay = 0;
+    
 	AHRS ahrs;
 	
+	PIDController turnController;
+	double rotateToAngleRate;
+	
+	ClawState clawState;
+    
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
@@ -165,7 +199,7 @@ public class Robot extends IterativeRobot {
 		driveCimLR = new WPI_TalonSRX(1);
 		driveCimRF = new WPI_TalonSRX(2);
 		driveCimRR = new WPI_TalonSRX(3);
-		
+
 		SpeedControllerGroup right = new SpeedControllerGroup(driveCimRF,driveCimRR);
 		SpeedControllerGroup left = new SpeedControllerGroup(driveCimLF,driveCimLR);
 		
@@ -173,11 +207,17 @@ public class Robot extends IterativeRobot {
 		driveJoystick = new Joystick(0);
 		driveJoystickButtons = new HHJoystickButtons(driveJoystick, 10);
 	
-		actuator1 = new DoubleSolenoid(forwardChannel1,reverseChannel1);
-		actuator2 = new DoubleSolenoid(forwardChannel2,reverseChannel2);
-		
+//		arms = new DoubleSolenoid(forwardChannel1, reverseChannel1);
+//		pusher = new DoubleSolenoid(forwardChannel2, reverseChannel2);
+
 		// ahrs = new AHRS(SerialPort.Port.kMXP.kUSB);
 		ahrs = new AHRS(Port.kUSB);
+		
+		turnController = new PIDController(kP, kI, kD, kF, ahrs, this);
+		turnController.setInputRange(-180.0f,  180.0f);
+		turnController.setOutputRange(-1.0,  1.0);
+		turnController.setAbsoluteTolerance(kToleranceDegrees);
+		turnController.setContinuous(true);
 	}
 
    /** Need to add teleopInit JF
@@ -197,25 +237,80 @@ public class Robot extends IterativeRobot {
 		
 		driveJoystickButtons.updateState();
 		
-		driveTrain.arcadeDrive(driveJoystick.getY(), driveJoystick.getZ());
+                //		driveTrain.arcadeDrive(driveJoystick.getY(), driveJoystick.getZ());
 		
-		openCloseClaw();
+                //		openCloseClaw();
 		
 		SmartDashboard.putBoolean("IMU_Connected", ahrs.isConnected());
+		SmartDashboard.putNumber("IMU_Angle", ahrs.getAngle());
+		
+		boolean rotateToAngle = false;
+		
+		if(driveJoystickButtons.isPressed(resetrotate)){
+			ahrs.reset();
+		}
+                
+		if (driveJoystickButtons.isPressed(rotatezero)){
+			turnController.setSetpoint(0.0f);
+			rotateToAngle = true;
+		} else if (driveJoystickButtons.isPressed(rotateninety)){
+			turnController.setSetpoint(90.0f);
+			rotateToAngle = true;
+		} else if (driveJoystickButtons.isPressed(rotateoneeighty)){
+			turnController.setSetpoint(179.9f);
+			rotateToAngle = true;
+		} else if (driveJoystickButtons.isPressed(rotatetwoseventy)){
+			turnController.setSetpoint(-90.0f);
+			rotateToAngle = true;
+		}
+
+		double currentRotationRate;
+
+		if (rotateToAngle){
+			turnController.enable();
+			currentRotationRate = rotateToAngleRate;
+		} else {
+			turnController.disable();
+			currentRotationRate = driveJoystick.getTwist();
+		}
+		try {
+			driveTrain.arcadeDrive(driveJoystick.getY(), currentRotationRate);
+		} catch(RuntimeException ex) {
+			DriverStation.reportError("Error communicating with drive system: "+ ex.getMessage(), true);
+		}
 	}
 	
 	void openCloseClaw() {
 		
-		if (driveJoystickButtons.isPressed(actuator1FWD)) {
-			actuator1.set(DoubleSolenoid.Value.kReverse);
-			// Timer.delay(0.1);
-			actuator2.set(DoubleSolenoid.Value.kForward);
-			Timer.delay(0.5);
-			actuator2.set(DoubleSolenoid.Value.kReverse);
-		} else if (driveJoystickButtons.isPressed(actuator1REV)) {
-				actuator1.set(DoubleSolenoid.Value.kForward);
+		switch (clawState) {
+		case InitialOpen:
+			arms.set(DoubleSolenoid.Value.kForward); //arms open
+			pusher.set(DoubleSolenoid.Value.kReverse); //pusher retracted
+			if (driveJoystickButtons.isPressed(armsclose)) {
+				clawState = ClawState.Close;
 			}
-		//actuator1.set(DoubleSolenoid.Value.kOff);
+			break;
+		case Close:
+			arms.set(DoubleSolenoid.Value.kReverse); //arms close
+			if (driveJoystickButtons.isPressed(armsopen)) {
+				clawState = ClawState.SecondOpen;
+				firstdelay = System.currentTimeMillis() + delaybeforepush;
+			}
+			break;
+		case SecondOpen:
+			arms.set(DoubleSolenoid.Value.kForward); // arms open
+			if(firstdelay >= System.currentTimeMillis()){
+				clawState = ClawState.Push;
+				seconddelay = System.currentTimeMillis() + delaybeforeretract;
+			}
+			break;
+		case Push:
+			pusher.set(DoubleSolenoid.Value.kForward); //pusher out
+			if(seconddelay >= System.currentTimeMillis()){
+				clawState = ClawState.InitialOpen;
+			}
+			break;
+		}
 	}
 	
 	/**
@@ -623,6 +718,12 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void testPeriodic() {
+	}
+	
+	@Override
+	
+	public void pidWrite(double output){
+		rotateToAngleRate = output;
 	}
 }
 

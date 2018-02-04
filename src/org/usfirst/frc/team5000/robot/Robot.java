@@ -25,7 +25,7 @@ import edu.wpi.first.wpilibj.SerialPort.Port;
  * project.
  */
 public class Robot extends IterativeRobot implements PIDOutput {
-    
+
 	// Enums
 	static enum ClawState {
 		InitialOpen, Close, SecondOpen, Push
@@ -124,23 +124,23 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	static final int reverseChannel2 = 3; //this is in
 	static final long delaybeforepush = 100;
 	static final long delaybeforeretract = 500;
-	
+
 	static final int resetrotate = 4;
 	static final int rotatezero = 5;
 	static final int rotateninety = 6;
 	static final int rotateoneeighty = 7;
 	static final int rotatetwoseventy = 8;
-    
+
 	static final int actuator1FWD = 2;
 	static final int actuator1REV = 3;
 	//static final int actuator2FWD = 4;
 	//static final int actuator2REV = 5;
-			
+
 	static final double kP = 0.03;
 	static final double kI = 0.00;
 	static final double kD = 0.00;
 	static final double kF = 0.00;
-	
+
 	static final double kToleranceDegrees = 2.0f;
 
 	// Variables
@@ -154,6 +154,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	double targetSpeed = 0;
 	long targetTime = 0;
 	double targetAngle = 0;
+
 	double targetTurningSpeed = 0;
 	double currentAngle = 0;
 	double angularDistance = 0;
@@ -165,25 +166,25 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	long afterTurnTime = 2000;
 	long centerDriveTime = 1800;
 	boolean leftIRSensor, rightIRSensor;
-    
+
 	WPI_TalonSRX driveCimLF, driveCimLR, driveCimRF, driveCimRR;
 	Joystick driveJoystick;
 	HHJoystickButtons driveJoystickButtons;
 	DifferentialDrive driveTrain;
-	
+
 	DoubleSolenoid arms, pusher;
 
 	long firstdelay = 0;
 	long seconddelay = 0;
-    
+
 	AHRS ahrs;
-	
+
 	PIDController turnController;
 	double rotateToAngleRate;
 	boolean rotateToAngle = false;
-	
+
 	ClawState clawState;
-    
+
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
@@ -195,7 +196,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		SmartDashboard.putData("Auto choices", chooser);
 
 		SmartDashboard.putString("Auto Step ", AutoStep.Start.toString());
-		
+
 		driveCimLF = new WPI_TalonSRX(0);
 		driveCimLR = new WPI_TalonSRX(1);
 		driveCimRF = new WPI_TalonSRX(2);
@@ -203,17 +204,17 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 		SpeedControllerGroup right = new SpeedControllerGroup(driveCimRF,driveCimRR);
 		SpeedControllerGroup left = new SpeedControllerGroup(driveCimLF,driveCimLR);
-		
+
 		driveTrain = new DifferentialDrive(right,left);
 		driveJoystick = new Joystick(0);
 		driveJoystickButtons = new HHJoystickButtons(driveJoystick, 10);
-	
-//		arms = new DoubleSolenoid(forwardChannel1, reverseChannel1);
-//		pusher = new DoubleSolenoid(forwardChannel2, reverseChannel2);
+
+		//		arms = new DoubleSolenoid(forwardChannel1, reverseChannel1);
+		//		pusher = new DoubleSolenoid(forwardChannel2, reverseChannel2);
 
 		// ahrs = new AHRS(SerialPort.Port.kMXP.kUSB);
 		ahrs = new AHRS(Port.kUSB);
-		
+
 		turnController = new PIDController(kP, kI, kD, kF, ahrs, this);
 		turnController.setInputRange(-180.0f,  180.0f);
 		turnController.setOutputRange(-1.0,  1.0);
@@ -221,38 +222,38 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		turnController.setContinuous(true);
 	}
 
-   /** Need to add teleopInit JF
-    * 
-    */
+	/** Need to add teleopInit JF
+	 * 
+	 */
 	@Override
 	public void teleopInit() {
 	}
-		
+
 	/**
 	 * This function is called periodically during operator control
 	 */
 	@Override
 	public void teleopPeriodic() {
-		
+
 		// driveTrain.arcadeDrive(driveJoystick);
-		
+
 		driveJoystickButtons.updateState();
-		
-                //		driveTrain.arcadeDrive(driveJoystick.getY(), driveJoystick.getZ());
-		
-                //		openCloseClaw();
-		
+
+		//		driveTrain.arcadeDrive(driveJoystick.getY(), driveJoystick.getZ());
+
+		//		openCloseClaw();
+
 		SmartDashboard.putBoolean("IMU_Connected", ahrs.isConnected());
 		SmartDashboard.putNumber("IMU_Angle", ahrs.getAngle());
 		SmartDashboard.putBoolean("PID enabled", turnController.isEnabled());
 		SmartDashboard.putNumber("PID setPoint", turnController.getSetpoint());
 		SmartDashboard.putNumber("PID delta", turnController.getDeltaSetpoint());
 		SmartDashboard.putNumber("PID rotateToAngleRate", rotateToAngleRate);
-		
+
 		if(driveJoystickButtons.isPressed(resetrotate)){
 			ahrs.reset();
 		}
-                
+
 		if (driveJoystickButtons.isPressed(rotatezero)){
 			turnController.setSetpoint(0.0f);
 			rotateToAngle = true;
@@ -278,15 +279,16 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			turnController.disable();
 			currentRotationRate = driveJoystick.getTwist();
 		}
+
 		try {
 			driveTrain.arcadeDrive(driveJoystick.getY(), currentRotationRate);
 		} catch(RuntimeException ex) {
 			DriverStation.reportError("Error communicating with drive system: "+ ex.getMessage(), true);
 		}
 	}
-	
+
 	void openCloseClaw() {
-		
+
 		switch (clawState) {
 		case InitialOpen:
 			arms.set(DoubleSolenoid.Value.kForward); //arms open
@@ -317,7 +319,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 		}
 	}
-	
+
 	/**
 	 * This autonomous (along with the chooser code above) shows how to select
 	 * between different autonomous modes using the dashboard. The sendable
@@ -336,6 +338,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 		autoStep = AutoStep.Start;
 		SmartDashboard.putString("Auto Step ", autoStep.toString());
+
 		initializeForNextStep();
 	}
 
@@ -345,20 +348,20 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	@Override
 	public void autonomousPeriodic() {
 
-            //		currentAngle = gyro.getAngle();
+		currentAngle = ahrs.getAngle();
 
-            //		SmartDashboard.putString("Gyro Angle2 ", String.format("%.2f", currentAngle));
+		SmartDashboard.putString("IMU_Angle", String.format("%.2f", currentAngle));
 
-            //		angularDistance = getAngularDistanceFromTarget(currentAngle, targetAngle);
+		angularDistance = getAngularDistanceFromTarget(currentAngle, targetAngle);
 
-            //		SmartDashboard.putNumber("Target Angle ", targetAngle);
-            //		SmartDashboard.putNumber("D ", angularDistance);
+		SmartDashboard.putNumber("Target Angle ", targetAngle);
+		SmartDashboard.putNumber("D ", angularDistance);
 
-            //		leftIRSensor = irSensorLeft.get();
-            //		rightIRSensor = irSensorRight.get();
+		leftIRSensor = irSensorLeft ? irSensorLeft.get() : false;
+		rightIRSensor = irSensorRight ? irSensorRight.get() : false;
 
-            //		SmartDashboard.putString("Left IR  ", Boolean.toString(leftIRSensor));
-            //		SmartDashboard.putString("Right IR ", Boolean.toString(rightIRSensor));
+		SmartDashboard.putString("Left IR  ", Boolean.toString(leftIRSensor));
+		SmartDashboard.putString("Right IR ", Boolean.toString(rightIRSensor));
 
 		boolean incrementStep = false;
 
@@ -366,7 +369,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			incrementStep = true;
 		} else if (0 < targetTime && targetTime <= System.currentTimeMillis()) {
 			incrementStep = true;
-		} else if (targetTurningSpeed > 0 && Math.abs(angularDistance) < 1) {
+		} else if (targetTurningSpeed > 0 && turnController.onTarget()) {
 			incrementStep = true;
 		} else if (watchForReflectiveStrips && leftIRSensor && rightIRSensor) {
 			incrementStep = true;
@@ -546,7 +549,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Turn:
-			t = getTurningSpeedFromAngularDistance(angularDistance);
+			t = rotateToAngleRate;
 			break;
 
 		case Stopped:
@@ -575,26 +578,20 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			y = ((1.0 - baseDriveLevel) * y) + baseDriveLevel;
 		}
 
-		if (t < 0) {
-			t = ((1.0 - baseTwistLevel) * t) - baseTwistLevel;
-		} else if (t > 0) {
-			t = ((1.0 - baseTwistLevel) * t) + baseTwistLevel;
-		}
-
 		SmartDashboard.putNumber("X ", x);
 		SmartDashboard.putNumber("Y ", y);
 		SmartDashboard.putNumber("T ", t);
 
-		
-			driveTrain.arcadeDrive(-x, t);
+		driveTrain.arcadeDrive(-x, t);
 	}
 
 	void initializeForNextStep() {
 		targetTime = 0;
 		targetSpeed = 0;
-		targetAngle = 0;
+		targetAngle = currentAngle;
 		targetTurningSpeed = 0;
 		watchForReflectiveStrips = false;
+		turnController.disable();
 		initAutoStep = true;
 	}
 
@@ -644,6 +641,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			driveState = DriveState.Turn;
 			targetTurningSpeed = speed;
 			targetAngle = getTargetAngle(currentAngle, -angle);
+			turnController.setSetpoint(targetAngle);
+			turnController.enable();
 		}
 	}
 
@@ -653,6 +652,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			driveState = DriveState.Turn;
 			targetTurningSpeed = speed;
 			targetAngle = getTargetAngle(currentAngle, angle);
+			turnController.setSetpoint(targetAngle);
+			turnController.enable();
 		}
 	}
 
@@ -724,9 +725,9 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	@Override
 	public void testPeriodic() {
 	}
-	
+
 	@Override
-	
+
 	public void pidWrite(double output){
 		rotateToAngleRate = output;
 	}

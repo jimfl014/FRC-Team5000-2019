@@ -154,6 +154,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	double targetSpeed = 0;
 	long targetTime = 0;
 	double targetAngle = 0;
+
 	double targetTurningSpeed = 0;
 	double currentAngle = 0;
 	double angularDistance = 0;
@@ -278,6 +279,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			turnController.disable();
 			currentRotationRate = driveJoystick.getTwist();
 		}
+
 		try {
 			driveTrain.arcadeDrive(driveJoystick.getY(), currentRotationRate);
 		} catch(RuntimeException ex) {
@@ -336,6 +338,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 		autoStep = AutoStep.Start;
 		SmartDashboard.putString("Auto Step ", autoStep.toString());
+
 		initializeForNextStep();
 	}
 
@@ -345,56 +348,56 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	@Override
 	public void autonomousPeriodic() {
 
-            //		currentAngle = gyro.getAngle();
+            currentAngle = ahrs.getAngle();
 
-            //		SmartDashboard.putString("Gyro Angle2 ", String.format("%.2f", currentAngle));
+            SmartDashboard.putString("IMU_Angle", String.format("%.2f", currentAngle));
 
-            //		angularDistance = getAngularDistanceFromTarget(currentAngle, targetAngle);
+            angularDistance = getAngularDistanceFromTarget(currentAngle, targetAngle);
 
-            //		SmartDashboard.putNumber("Target Angle ", targetAngle);
-            //		SmartDashboard.putNumber("D ", angularDistance);
+            SmartDashboard.putNumber("Target Angle ", targetAngle);
+            SmartDashboard.putNumber("D ", angularDistance);
 
-            //		leftIRSensor = irSensorLeft.get();
-            //		rightIRSensor = irSensorRight.get();
+            leftIRSensor = irSensorLeft ? irSensorLeft.get() : false;
+            rightIRSensor = irSensorRight ? irSensorRight.get() : false;
 
-            //		SmartDashboard.putString("Left IR  ", Boolean.toString(leftIRSensor));
-            //		SmartDashboard.putString("Right IR ", Boolean.toString(rightIRSensor));
+            SmartDashboard.putString("Left IR  ", Boolean.toString(leftIRSensor));
+            SmartDashboard.putString("Right IR ", Boolean.toString(rightIRSensor));
 
-		boolean incrementStep = false;
+            boolean incrementStep = false;
 
-		if (targetTime == 0 && targetTurningSpeed == 0) {
-			incrementStep = true;
-		} else if (0 < targetTime && targetTime <= System.currentTimeMillis()) {
-			incrementStep = true;
-		} else if (targetTurningSpeed > 0 && Math.abs(angularDistance) < 1) {
-			incrementStep = true;
-		} else if (watchForReflectiveStrips && leftIRSensor && rightIRSensor) {
-			incrementStep = true;
-		}
+            if (targetTime == 0 && targetTurningSpeed == 0) {
+                incrementStep = true;
+            } else if (0 < targetTime && targetTime <= System.currentTimeMillis()) {
+                incrementStep = true;
+            } else if (targetTurningSpeed > 0 && turnController.onTarget()) {
+                incrementStep = true;
+            } else if (watchForReflectiveStrips && leftIRSensor && rightIRSensor) {
+                incrementStep = true;
+            }
 
-		if (incrementStep) {
-			initializeForNextStep();
-			autoStep = autoStep.next();
+            if (incrementStep) {
+                initializeForNextStep();
+                autoStep = autoStep.next();
 
-			SmartDashboard.putString("Auto Step ", autoStep.toString());
-		}
+                SmartDashboard.putString("Auto Step ", autoStep.toString());
+            }
 
-		switch (autoSelected) {
-		case LEFT_AUTO:
-			leftAutoProgram();
-			break;
+            switch (autoSelected) {
+            case LEFT_AUTO:
+                leftAutoProgram();
+                break;
 
-		default:
-		case CENTER_AUTO:
-			centerAutoProgram();
-			break;
+            default:
+            case CENTER_AUTO:
+                centerAutoProgram();
+                break;
 
-		case RIGHT_AUTO:
-			rightAutoProgram();
-			break;
-		}
+            case RIGHT_AUTO:
+                rightAutoProgram();
+                break;
+            }
 
-		doStep();
+            doStep();
 	}
 
 	void leftAutoProgram() {
@@ -546,7 +549,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Turn:
-			t = getTurningSpeedFromAngularDistance(angularDistance);
+			t = rotateToAngleRate;
 			break;
 
 		case Stopped:
@@ -575,26 +578,20 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			y = ((1.0 - baseDriveLevel) * y) + baseDriveLevel;
 		}
 
-		if (t < 0) {
-			t = ((1.0 - baseTwistLevel) * t) - baseTwistLevel;
-		} else if (t > 0) {
-			t = ((1.0 - baseTwistLevel) * t) + baseTwistLevel;
-		}
-
 		SmartDashboard.putNumber("X ", x);
 		SmartDashboard.putNumber("Y ", y);
 		SmartDashboard.putNumber("T ", t);
 
-		
-			driveTrain.arcadeDrive(-x, t);
+                driveTrain.arcadeDrive(-x, t);
 	}
 
 	void initializeForNextStep() {
 		targetTime = 0;
 		targetSpeed = 0;
-		targetAngle = 0;
+		targetAngle = currentAngle;
 		targetTurningSpeed = 0;
 		watchForReflectiveStrips = false;
+                turnController.disable();
 		initAutoStep = true;
 	}
 
@@ -644,6 +641,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			driveState = DriveState.Turn;
 			targetTurningSpeed = speed;
 			targetAngle = getTargetAngle(currentAngle, -angle);
+			turnController.setSetpoint(targetAngle);
+                        turnController.enable();
 		}
 	}
 
@@ -653,6 +652,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			driveState = DriveState.Turn;
 			targetTurningSpeed = speed;
 			targetAngle = getTargetAngle(currentAngle, angle);
+			turnController.setSetpoint(targetAngle);
+                        turnController.enable();
 		}
 	}
 

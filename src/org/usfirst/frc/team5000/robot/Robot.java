@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PIDOutput;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.SerialPort.Port;
+import edu.wpi.first.wpilibj.DigitalInput;
 
 
 /**
@@ -165,6 +166,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	long beforeTurnTime = 2300;
 	long afterTurnTime = 2000;
 	long centerDriveTime = 1800;
+
+	DigitalInput irSensorLeft, irSensorRight;
 	boolean leftIRSensor, rightIRSensor;
 
 	WPI_TalonSRX driveCimLF, driveCimLR, driveCimRF, driveCimRR;
@@ -212,7 +215,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		//		arms = new DoubleSolenoid(forwardChannel1, reverseChannel1);
 		//		pusher = new DoubleSolenoid(forwardChannel2, reverseChannel2);
 
-		// ahrs = new AHRS(SerialPort.Port.kMXP.kUSB);
+//		ahrs = new AHRS(Port.kMXP);
 		ahrs = new AHRS(Port.kUSB);
 
 		turnController = new PIDController(kP, kI, kD, kF, ahrs, this);
@@ -227,6 +230,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	 */
 	@Override
 	public void teleopInit() {
+		turnController.disable();
+		rotateToAngle = false;
 	}
 
 	/**
@@ -239,8 +244,6 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 		driveJoystickButtons.updateState();
 
-		//		driveTrain.arcadeDrive(driveJoystick.getY(), driveJoystick.getZ());
-
 		//		openCloseClaw();
 
 		SmartDashboard.putBoolean("IMU_Connected", ahrs.isConnected());
@@ -252,9 +255,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 		if(driveJoystickButtons.isPressed(resetrotate)){
 			ahrs.reset();
-		}
-
-		if (driveJoystickButtons.isPressed(rotatezero)){
+		} else if (driveJoystickButtons.isPressed(rotatezero)){
 			turnController.setSetpoint(0.0f);
 			rotateToAngle = true;
 		} else if (driveJoystickButtons.isPressed(rotateninety)){
@@ -357,8 +358,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		SmartDashboard.putNumber("Target Angle ", targetAngle);
 		SmartDashboard.putNumber("D ", angularDistance);
 
-		leftIRSensor = irSensorLeft ? irSensorLeft.get() : false;
-		rightIRSensor = irSensorRight ? irSensorRight.get() : false;
+		leftIRSensor = irSensorLeft != null ? irSensorLeft.get() : false;
+		rightIRSensor = irSensorRight != null ? irSensorRight.get() : false;
 
 		SmartDashboard.putString("Left IR  ", Boolean.toString(leftIRSensor));
 		SmartDashboard.putString("Right IR ", Boolean.toString(rightIRSensor));

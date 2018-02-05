@@ -13,9 +13,11 @@ import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PIDOutput;
+import edu.wpi.first.wpilibj.PowerDistributionPanel;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.SerialPort.Port;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.Spark;
 
 
 /**
@@ -26,7 +28,6 @@ import edu.wpi.first.wpilibj.DigitalInput;
  * project.
  */
 public class Robot extends IterativeRobot implements PIDOutput {
-
 	// Enums
 	static enum ClawState {
 		InitialOpen, Close, SecondOpen, Push
@@ -144,6 +145,13 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 	static final double kToleranceDegrees = 2.0f;
 
+	static final int LIFT_UP_BUTTON = 9;
+	static final int LIFT_QUICK_RELEASE_BUTTON = 10;
+	static final double FORWARD_LIFT_SPEED = -0.7;//change for actual robot
+	static final double REVERSE_LIFT_SPEED = 0.6;//change for actual robot
+	
+	static final double CurrentLimit = 38;
+
 	// Variables
 	final String defaultAuto = "Default";
 	final String customAuto = "My Auto";
@@ -176,6 +184,10 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	DifferentialDrive driveTrain;
 
 	DoubleSolenoid arms, pusher;
+	Spark lift;
+	MotorState liftState = MotorState.Stopped;
+
+	PowerDistributionPanel pdp;
 
 	long firstdelay = 0;
 	long seconddelay = 0;
@@ -217,8 +229,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		buttonsJoystickButtons = new HHJoystickButtons(buttonsJoystick, 12);
 		
 
-		//		arms = new DoubleSolenoid(forwardChannel1, reverseChannel1);
-		//		pusher = new DoubleSolenoid(forwardChannel2, reverseChannel2);
+		arms = new DoubleSolenoid(forwardChannel1, reverseChannel1);
+		pusher = new DoubleSolenoid(forwardChannel2, reverseChannel2);
 
 //		ahrs = new AHRS(Port.kMXP);
 		ahrs = new AHRS(Port.kUSB);
@@ -228,6 +240,10 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		turnController.setOutputRange(-1.0,  1.0);
 		turnController.setAbsoluteTolerance(kToleranceDegrees);
 		turnController.setContinuous(true);
+
+		lift = new Spark(0);
+		
+		pdp = new PowerDistributionPanel();
 	}
 
 	/** Need to add teleopInit JF
@@ -247,7 +263,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 		buttonsJoystickButtons.updateState();
 
-		//		openCloseClaw();
+                openCloseClaw();
+		winchPeriodic();
 
 		SmartDashboard.putBoolean("IMU_Connected", ahrs.isConnected());
 		SmartDashboard.putNumber("IMU_Angle", ahrs.getAngle());
@@ -322,6 +339,33 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			}
 			break;
 		}
+	}
+
+	void winchPeriodic() {
+		String liftStatus = null;
+		double Current = pdp.getCurrent(14);//change # for actual robot
+		SmartDashboard.putNumber("Lift Current", Current);
+		
+		if (buttonsJoystickButtons.isPressed(LIFT_UP_BUTTON)) {
+			if (liftState == MotorState.Stopped){
+				liftState = MotorState.Forward;
+			}
+			else if (liftState == MotorState.Forward){
+				liftState = MotorState.Stopped;
+			}
+		}
+		if (Current >= CurrentLimit){ //change # for actual robot
+			liftState = MotorState.Stopped;
+		}
+		
+		if (liftState == MotorState.Forward) {
+			lift.set(FORWARD_LIFT_SPEED);
+			liftStatus = "Up";
+		} else {
+			lift.stopMotor();
+			liftStatus = "Stopped";
+		}
+		SmartDashboard.putString("Lift Status", liftStatus);
 	}
 
 	/**

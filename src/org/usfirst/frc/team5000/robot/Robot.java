@@ -171,8 +171,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	boolean leftIRSensor, rightIRSensor;
 
 	WPI_TalonSRX driveCimLF, driveCimLR, driveCimRF, driveCimRR;
-	Joystick driveJoystick;
-	HHJoystickButtons driveJoystickButtons;
+	Joystick driveJoystick, buttonsJoystick;
+	HHJoystickButtons buttonsJoystickButtons;
 	DifferentialDrive driveTrain;
 
 	DoubleSolenoid arms, pusher;
@@ -204,13 +204,18 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		driveCimLR = new WPI_TalonSRX(1);
 		driveCimRF = new WPI_TalonSRX(2);
 		driveCimRR = new WPI_TalonSRX(3);
+		
+		driveCimLF.setInverted(true);
+		driveCimRR.setInverted(true);
 
 		SpeedControllerGroup right = new SpeedControllerGroup(driveCimRF,driveCimRR);
 		SpeedControllerGroup left = new SpeedControllerGroup(driveCimLF,driveCimLR);
 
 		driveTrain = new DifferentialDrive(right,left);
-		driveJoystick = new Joystick(0);
-		driveJoystickButtons = new HHJoystickButtons(driveJoystick, 10);
+		driveJoystick = new Joystick(0);		
+		buttonsJoystick = new Joystick(1);
+		buttonsJoystickButtons = new HHJoystickButtons(buttonsJoystick, 12);
+		
 
 		//		arms = new DoubleSolenoid(forwardChannel1, reverseChannel1);
 		//		pusher = new DoubleSolenoid(forwardChannel2, reverseChannel2);
@@ -240,9 +245,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	@Override
 	public void teleopPeriodic() {
 
-		// driveTrain.arcadeDrive(driveJoystick);
-
-		driveJoystickButtons.updateState();
+		buttonsJoystickButtons.updateState();
 
 		//		openCloseClaw();
 
@@ -253,18 +256,18 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		SmartDashboard.putNumber("PID delta", turnController.getDeltaSetpoint());
 		SmartDashboard.putNumber("PID rotateToAngleRate", rotateToAngleRate);
 
-		if(driveJoystickButtons.isPressed(resetrotate)){
+		if(buttonsJoystickButtons.isPressed(resetrotate)){
 			ahrs.reset();
-		} else if (driveJoystickButtons.isPressed(rotatezero)){
+		} else if (buttonsJoystickButtons.isPressed(rotatezero)){
 			turnController.setSetpoint(0.0f);
 			rotateToAngle = true;
-		} else if (driveJoystickButtons.isPressed(rotateninety)){
+		} else if (buttonsJoystickButtons.isPressed(rotateninety)){
 			turnController.setSetpoint(90.0f);
 			rotateToAngle = true;
-		} else if (driveJoystickButtons.isPressed(rotateoneeighty)){
+		} else if (buttonsJoystickButtons.isPressed(rotateoneeighty)){
 			turnController.setSetpoint(179.9f);
 			rotateToAngle = true;
-		} else if (driveJoystickButtons.isPressed(rotatetwoseventy)){
+		} else if (buttonsJoystickButtons.isPressed(rotatetwoseventy)){
 			turnController.setSetpoint(-90.0f);
 			rotateToAngle = true;
 		} else if (rotateToAngle && turnController.onTarget()) {
@@ -294,13 +297,13 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		case InitialOpen:
 			arms.set(DoubleSolenoid.Value.kForward); //arms open
 			pusher.set(DoubleSolenoid.Value.kReverse); //pusher retracted
-			if (driveJoystickButtons.isPressed(armsclose)) {
+			if (buttonsJoystickButtons.isPressed(armsclose)) {
 				clawState = ClawState.Close;
 			}
 			break;
 		case Close:
 			arms.set(DoubleSolenoid.Value.kReverse); //arms close
-			if (driveJoystickButtons.isPressed(armsopen)) {
+			if (buttonsJoystickButtons.isPressed(armsopen)) {
 				clawState = ClawState.SecondOpen;
 				firstdelay = System.currentTimeMillis() + delaybeforepush;
 			}

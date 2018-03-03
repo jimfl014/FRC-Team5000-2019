@@ -103,22 +103,22 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 	// Constants
 
+	static final boolean CompetitionRobot = true;
+
 	static final String Left = "Left";
 	static final String Center = "Center";
 	static final String Right = "Right";
 
 	static final String LeftColorRightAuto = "LCR";
 	static final String LeftColorLeftAuto = "LCL";
-	static final String CenterColorLeftAuto = "CCL";
-	static final String CenterColorRightAuto = "CCR";
+	static final String CenterAuto = "C";
+	//static final String CenterColorRightAuto = "CCR";
 	static final String RightColorLeftAuto = "RCL";
 	static final String RightColorRightAuto = "RCR";
 
-	static final double Kp = 0.03;
-
 	static final int forwardChannel1 = 0; //this is open
 	static final int reverseChannel1 = 3; //this is close
-	static final int armsopen = 1;
+	static final int armsopen = 3;
 	static final int armsclose = 2;
 	static final int forwardChannel2 = 2; //this is out
 	static final int reverseChannel2 = 1; //this is in
@@ -135,25 +135,20 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	static final int winchdown2 = 9;
 
 	static final int resetrotate = 4;
-	//static final int rotatezero = 5;
-	//static final int rotateninety = 6;
-	//static final int rotateoneeighty = 7;
-	//static final int rotatetwoseventy = 8;
+	static final int rotatezero = 5;
+	static final int rotateninety = 6;
+	static final int rotateoneeighty = 7;
+	static final int rotatetwoseventy = 8;
 
 	static final int actuator1FWD = 2;
 	static final int actuator1REV = 3;
 	//static final int actuator2FWD = 4;
 	//static final int actuator2REV = 5;
 
-	static final double kP = 0.03;
-	static final double kI = 0.00;
-	static final double kD = 0.00;
-	static final double kF = 0.00;
-
-	static final double kToleranceDegrees = 2.0f;
+	static final double kToleranceDegrees = 1.0f;
 	static final double kCollisionThreshold_DeltaG = 0.5f;
 
-	static final int LIFT_UP_BUTTON = 3;
+	static final int LIFT_UP_BUTTON = 1;
 	static final double FORWARD_LIFT_SPEED = -0.7;//change for actual robot
 	static final double REVERSE_LIFT_SPEED = 0.6;//change for actual robot
 
@@ -165,15 +160,24 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 	static final double CurrentLimit = 25;
 
-	static final double AUTO_SPEED = 0.3;
+	static final double AUTO_SPEED = 0.5;
 
-    static final String TIME_TO_BASELINE_WIDGET = "Time to drive to baseline ";
-    static final String TIME_TO_DRIVE_NEXT_TO_SWITCH_WIDGET = "Time to drive next to switch ";
-    static final String TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_WIDGET = "Time to drive to side of switch ";
-    static final String TIME_TO_DRIVE_TO_FRONT_OF_SWITCH_WIDGET = "Time to drive to front of switch ";
-    static final String TIME_TO_DRIVE_TO_CORNER_OF_SWITCH_WIDGET = "Time to drive to corner of switch ";
-    static final String TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET = "Time to drive next to switch from corner ";
-    static final String TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET = "Time to drive to side of switch from center ";
+	static final String TIME_TO_BASELINE_WIDGET = "Time to drive to baseline ";
+	static final String TIME_TO_DRIVE_NEXT_TO_SWITCH_WIDGET = "Time to drive next to switch ";
+	static final String TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_WIDGET = "Time to drive to side of switch ";
+	static final String TIME_TO_DRIVE_TO_FRONT_OF_SWITCH_WIDGET = "Time to drive to front of switch ";
+	//static final String TIME_TO_DRIVE_TO_CORNER_OF_SWITCH_WIDGET = "Time to drive to corner of switch ";
+	//static final String TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET = "Time to drive next to switch from corner ";
+	//static final String TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET = "Time to drive to side of switch from center ";
+
+    static final String KP_WIDGET = "kP ";
+    static final String KI_WIDGET = "kI ";
+    static final String KD_WIDGET = "kD ";
+    static final String KF_WIDGET = "kF ";
+
+    static final String BASE_DRIVE_LEVEL_WIDGET = "Base Drive Level ";
+    static final String BASE_TWIST_LEVEL_WIDGET = "Base Twist Level ";
+    
 
 	// Variables
 	final String defaultAuto = "Default";
@@ -192,18 +196,18 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	double angularDistance = 0;
 	boolean watchForReflectiveStrips = false;
 	DriveState driveState = DriveState.Stopped;
-	double baseDriveLevel = 0.4;
+	double baseDriveLevel = 0.35;
 	double baseTwistLevel = 0.6;
 	long driveToBaseLineTime = 5000;
-	long driveNextToSwitch = 2000;
-	long driveToSideOfSwitch = 1000;
-	long driveToFrontOfSwitch = 1000;
-	long driveToCornerOfSwitch = 1000;
-	long driveNextToSwitchFromCorner = 1000;
-	long driveToSideOfSwitchFromCenter = 1000;
+	long driveNextToSwitch = 3500;
+	long driveToSideOfSwitch = 750;
+	long driveToFrontOfSwitch = 3000;
+	//long driveToCornerOfSwitch = 1000;
+	//long driveNextToSwitchFromCorner = 1000;
+	//long driveToSideOfSwitchFromCenter = 1000;
 	long pauseBetweenLiftAndPush = 3000;
 	boolean drivejoystickenabled = false;
-	
+
 	long autoDefaultDriveTime = 1000;
 
 	CameraServer cameraServer;
@@ -229,13 +233,20 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 	AHRS ahrs;
 
-    boolean collisionDetected = false;
+	double kP = 0.003;
+	double kI = 0.0; // 0.0001;
+	double kD = 0.0; // 0.00001;
+	double kF = 0.00;
+
+	boolean collisionDetected = false;
 	double last_world_linear_accel_x;
 	double last_world_linear_accel_y;
-    
+
 	PIDController turnController;
 	double rotateToAngleRate;
-	boolean rotateToAngle = false;
+        boolean rotateToAngle = false;
+	double previousCorrection = 0.0;
+	boolean readyForOnTarget = false;
 
 	ClawState clawState;
 
@@ -254,29 +265,44 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 		SmartDashboard.putString("Auto Step ", AutoStep.Start.toString());
 
-		//driveCimLF = new WPI_TalonSRX(0);
-		driveCimLR = new WPI_TalonSRX(1);
-		//driveCimRF = new WPI_TalonSRX(2);
-		driveCimRR = new WPI_TalonSRX(3);
+		if ( CompetitionRobot ) {
+			//driveCimLF = new WPI_TalonSRX(0);
+			driveCimLR = new WPI_TalonSRX(1);
+			//driveCimRF = new WPI_TalonSRX(2);
+			driveCimRR = new WPI_TalonSRX(3);
 
-		driveCimLR.setInverted(true);
-		driveCimRR.setInverted(true);
+			driveCimLR.setInverted(true);
+			driveCimRR.setInverted(true);
 
-		SpeedControllerGroup right = new SpeedControllerGroup(/*driveCimRF,*/driveCimRR);
-		SpeedControllerGroup left = new SpeedControllerGroup(/*driveCimLF,*/driveCimLR);
+			SpeedControllerGroup right = new SpeedControllerGroup(/*driveCimRF,*/driveCimRR);
+			SpeedControllerGroup left = new SpeedControllerGroup(/*driveCimLF,*/driveCimLR);
+			driveTrain = new DifferentialDrive(left,right);
+		} else {
+			driveCimLR = new WPI_TalonSRX(0);
+			driveCimRF = new WPI_TalonSRX(1);
 
-		driveTrain = new DifferentialDrive(left,right);
+			driveCimLR.setInverted(true);
+			driveCimRF.setInverted(true);
+
+			SpeedControllerGroup left = new SpeedControllerGroup(driveCimLR);
+			SpeedControllerGroup right = new SpeedControllerGroup(driveCimRF);
+			driveTrain = new DifferentialDrive(left,right);
+		}
+
 		driveJoystick = new Joystick(0);		
 		buttonsJoystick = new Joystick(1);
 		buttonsJoystickButtons = new HHJoystickButtons(buttonsJoystick, 10);
 
 		arms = new DoubleSolenoid(forwardChannel1, reverseChannel1);
 		pusher = new DoubleSolenoid(forwardChannel2, reverseChannel2);
-		
-		ahrs = new AHRS(SPI.Port.kMXP);
-		//ahrs = new AHRS(I2C.Port.kOnboard);
 
-		turnController = new PIDController(kP, kI, kD, kF, ahrs, this);
+		if( CompetitionRobot ) {
+                    ahrs = new AHRS(SPI.Port.kMXP);
+                } else {
+                    ahrs = new AHRS(I2C.Port.kOnboard);
+                }
+
+		turnController = new PIDController(kP, kI, kD, kF, ahrs, this /*, 0.02F */);
 		turnController.setInputRange(-180.0f,  180.0f);
 		turnController.setOutputRange(-1.0,  1.0);
 		turnController.setAbsoluteTolerance(kToleranceDegrees);
@@ -289,18 +315,28 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		cameraServer.startAutomaticCapture("cam0", 0);
 
 		pdp = new PowerDistributionPanel();
-		
+
 		SmartDashboard.putString(TIME_TO_BASELINE_WIDGET, Long.toString(driveToBaseLineTime));
 		SmartDashboard.putString(TIME_TO_DRIVE_NEXT_TO_SWITCH_WIDGET, Long.toString(driveNextToSwitch));
 		SmartDashboard.putString(TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_WIDGET, Long.toString(driveToSideOfSwitch));
 		SmartDashboard.putString(TIME_TO_DRIVE_TO_FRONT_OF_SWITCH_WIDGET, Long.toString(driveToFrontOfSwitch));
-		SmartDashboard.putString(TIME_TO_DRIVE_TO_CORNER_OF_SWITCH_WIDGET, Long.toString(driveToCornerOfSwitch));
-		SmartDashboard.putString(TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET, Long.toString(driveNextToSwitchFromCorner));
-		SmartDashboard.putString(TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET, Long.toString(driveToSideOfSwitchFromCenter));
-		
-		SmartDashboard.putNumber("Base Drive Level ", baseDriveLevel);
-		SmartDashboard.putNumber("Base Twist Level ", baseTwistLevel);
+		//SmartDashboard.putString(TIME_TO_DRIVE_TO_CORNER_OF_SWITCH_WIDGET, Long.toString(driveToCornerOfSwitch));
+		//SmartDashboard.putString(TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET, Long.toString(driveNextToSwitchFromCorner));
+		//SmartDashboard.putString(TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET, Long.toString(driveToSideOfSwitchFromCenter));
+
+		SmartDashboard.putNumber(BASE_DRIVE_LEVEL_WIDGET, baseDriveLevel);
+		SmartDashboard.putNumber(BASE_TWIST_LEVEL_WIDGET, baseTwistLevel);
 		SmartDashboard.putBoolean("Collision Detected ", collisionDetected);
+
+		SmartDashboard.putNumber(KP_WIDGET, kP);
+		SmartDashboard.putNumber(KI_WIDGET, kI);
+		SmartDashboard.putNumber(KD_WIDGET, kD);
+		SmartDashboard.putNumber(KF_WIDGET, kF);
+	}
+
+	@Override
+	public void disabledInit() {
+		driveTrain.stopMotor();
 	}
 
 	/** Need to add teleopInit JF
@@ -309,11 +345,28 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	@Override
 	public void teleopInit() {
 		turnController.disable();
-		rotateToAngle = false;
+
 		liftState = MotorState.Stopped;
 		winchState = MotorState.Stopped;
 		clawState = ClawState.InitialOpen;
 		drivejoystickenabled = true;
+		rotateToAngle = false;
+
+		baseDriveLevel = SmartDashboard.getNumber(BASE_DRIVE_LEVEL_WIDGET, 0);
+		baseTwistLevel = SmartDashboard.getNumber(BASE_TWIST_LEVEL_WIDGET, 0);
+
+		baseDriveLevel = Math.max( 0.0, baseDriveLevel );
+		baseDriveLevel = Math.min( 1.0, baseDriveLevel );
+
+		baseTwistLevel = Math.max( 0.0, baseTwistLevel );
+		baseTwistLevel = Math.min( 1.0, baseTwistLevel );
+
+		kP = SmartDashboard.getNumber(KP_WIDGET, kP);
+		kI = SmartDashboard.getNumber(KI_WIDGET, kI);
+		kD = SmartDashboard.getNumber(KD_WIDGET, kD);
+		kF = SmartDashboard.getNumber(KF_WIDGET, kF);
+
+		turnController.setPID( kP, kI, kD, kF );
 	}
 
 	/**
@@ -335,45 +388,74 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		SmartDashboard.putNumber("PID delta", turnController.getDeltaSetpoint());
 		SmartDashboard.putNumber("PID rotateToAngleRate", rotateToAngleRate);
 
-		/*if(buttonsJoystickButtons.isPressed(resetrotate)){
-			ahrs.reset();
-		} //else if (buttonsJoystickButtons.isPressed(rotatezero)){
-			//turnController.setSetpoint(0.0f);
-			//rotateToAngle = true;
-		} else if (buttonsJoystickButtons.isPressed(rotateninety)){
-			turnController.setSetpoint(90.0f);
-			rotateToAngle = true;
-		} else if (buttonsJoystickButtons.isPressed(rotateoneeighty)){
-			turnController.setSetpoint(179.9f);
-			rotateToAngle = true;
-		} else if (buttonsJoystickButtons.isPressed(rotatetwoseventy)){
-			turnController.setSetpoint(-90.0f);
-			rotateToAngle = true;
-		} else if (rotateToAngle && turnController.onTarget()) {
-			rotateToAngle = false;
-		}*/
+		if( CompetitionRobot ) {
+			double A = (driveJoystick.getThrottle() + 1) / 2;
+			double B = 0.2;
+			SmartDashboard.putNumber("Joystick Sensitivity A", A);
+			
+			double y = adjustSensitivity( driveJoystick.getY(), A, B );
+			double t = adjustSensitivity( driveJoystick.getTwist(), A, B );
 
-		double currentRotationRate;
+			SmartDashboard.putNumber("Y ", y);
+			SmartDashboard.putNumber("T ", t);
 
-		if (rotateToAngle && false){
-			turnController.enable();
-			currentRotationRate = rotateToAngleRate;
+			driveTrain.arcadeDrive(y, t);
+
 		} else {
-			turnController.disable();
-			currentRotationRate = driveJoystick.getTwist();
+
+			if(buttonsJoystickButtons.isPressed(resetrotate)){
+				ahrs.reset();
+			} else if (buttonsJoystickButtons.isPressed(rotatezero)){
+				turnController.setSetpoint(0.0f);
+				rotateToAngle = true;
+				readyForOnTarget = false;
+				previousCorrection = 0.0;
+			} else if (buttonsJoystickButtons.isPressed(rotateninety)){
+				turnController.setSetpoint(90.0f);
+				rotateToAngle = true;
+				readyForOnTarget = false;
+				previousCorrection = 0.0;
+			} else if (buttonsJoystickButtons.isPressed(rotateoneeighty)){
+				turnController.setSetpoint(179.9f);
+				rotateToAngle = true;
+				readyForOnTarget = false;
+				previousCorrection = 0.0;
+			} else if (buttonsJoystickButtons.isPressed(rotatetwoseventy)){
+				turnController.setSetpoint(-90.0f);
+				rotateToAngle = true;
+				readyForOnTarget = false;
+				previousCorrection = 0.0;
+			} else if (rotateToAngle && readyForOnTarget && turnController.onTarget()) {
+				rotateToAngle = false;
+			}
+
+			double A = (driveJoystick.getThrottle() + 1) / 2;
+			double B = 0.2;
+			SmartDashboard.putNumber("Joystick Sensitivity A", A);
+
+			double currentRotationRate;
+
+			if (rotateToAngle){
+				if( previousCorrection * rotateToAngleRate < 0.0 ) {
+					readyForOnTarget = true;
+				}
+
+				turnController.enable();
+				currentRotationRate = adjustForBaseLevel( rotateToAngleRate, baseTwistLevel );
+				previousCorrection = rotateToAngleRate;
+			} else {
+				turnController.disable();
+				currentRotationRate = adjustSensitivity( driveJoystick.getTwist(), A, B );
+			}
+
+			double y = adjustSensitivity( driveJoystick.getY(), A, B );
+			double t = currentRotationRate;
+
+			SmartDashboard.putNumber("Y ", y);
+			SmartDashboard.putNumber("T ", t);
+
+			driveTrain.arcadeDrive(y, -t);
 		}
-
-		/*try {
-			driveTrain.arcadeDrive(driveJoystick.getY(), currentRotationRate  * Math.abs(currentRotationRate));
-		} catch(RuntimeException ex) {
-			DriverStation.reportError("Error communicating with drive system: "+ ex.getMessage(), true);
-		}*/
-		double y = driveJoystick.getY();
-		double t = currentRotationRate * Math.abs(currentRotationRate);
-		SmartDashboard.putNumber("Y ", y);
-		SmartDashboard.putNumber("T ", t);
-
-		driveTrain.arcadeDrive(y, t);
 	}
 
 	void openCloseClaw() {
@@ -541,7 +623,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 					autoMode = LeftColorLeftAuto;
 					break;
 				case Center:
-					autoMode = CenterColorLeftAuto;
+					autoMode = CenterAuto;
 					break;
 				case Right:
 					autoMode = RightColorLeftAuto;
@@ -553,7 +635,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 					autoMode = LeftColorRightAuto;
 					break;
 				case Center:
-					autoMode = CenterColorRightAuto;
+					autoMode = CenterAuto;
 					break;
 				case Right:
 					autoMode = RightColorRightAuto;
@@ -561,6 +643,22 @@ public class Robot extends IterativeRobot implements PIDOutput {
 				}
 			}
 		}
+
+		baseDriveLevel = SmartDashboard.getNumber(BASE_DRIVE_LEVEL_WIDGET, 0);
+		baseTwistLevel = SmartDashboard.getNumber(BASE_TWIST_LEVEL_WIDGET, 0);
+
+		baseDriveLevel = Math.max( 0.0, baseDriveLevel );
+		baseDriveLevel = Math.min( 1.0, baseDriveLevel );
+
+		baseTwistLevel = Math.max( 0.0, baseTwistLevel );
+		baseTwistLevel = Math.min( 1.0, baseTwistLevel );
+
+		kP = SmartDashboard.getNumber(KP_WIDGET, kP);
+		kI = SmartDashboard.getNumber(KI_WIDGET, kI);
+		kD = SmartDashboard.getNumber(KD_WIDGET, kD);
+		kF = SmartDashboard.getNumber(KF_WIDGET, kF);
+
+		turnController.setPID( kP, kI, kD, kF );
 	}
 
 	/**
@@ -571,17 +669,22 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 		currentAngle = ahrs.getAngle();
 
-		SmartDashboard.putString("IMU_Angle", String.format("%.2f", currentAngle));
+		SmartDashboard.putBoolean("IMU_Connected", ahrs.isConnected());
+		SmartDashboard.putNumber("IMU_Angle", ahrs.getAngle());
+		SmartDashboard.putBoolean("PID enabled", turnController.isEnabled());
+		SmartDashboard.putNumber("PID setPoint", turnController.getSetpoint());
+		SmartDashboard.putNumber("PID delta", turnController.getDeltaSetpoint());
+		SmartDashboard.putNumber("PID rotateToAngleRate", rotateToAngleRate);
 
 		angularDistance = getAngularDistanceFromTarget(currentAngle, targetAngle);
 
 		SmartDashboard.putNumber("Target Angle ", targetAngle);
 		SmartDashboard.putNumber("D ", angularDistance);
 
-                detectCollision();
+		detectCollision();
 
-                SmartDashboard.putBoolean( "Collision Detected ", collisionDetected);
-                
+		SmartDashboard.putBoolean( "Collision Detected ", collisionDetected);
+
 		leftIRSensor = irSensorLeft != null ? irSensorLeft.get() : false;
 		rightIRSensor = irSensorRight != null ? irSensorRight.get() : false;
 
@@ -594,9 +697,9 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			incrementStep = true;
 		} else if (0 < targetTime && targetTime <= System.currentTimeMillis()) {
 			incrementStep = true;
-		} else if (targetTurningSpeed > 0 && turnController.onTarget()) {
+		} else if (targetTurningSpeed > 0 && readyForOnTarget && turnController.onTarget()) {
 			incrementStep = true;
-		} else if (targetSpeed > 0 && collisionDetected) {
+		} else if (targetSpeed > 0 && collisionDetected && false) {
 			incrementStep = true;
 		} else if (watchForReflectiveStrips && leftIRSensor && rightIRSensor) {
 			incrementStep = true;
@@ -619,13 +722,13 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			leftcolorleft();
 			break;
 
-		case CenterColorLeftAuto:
-			centercolorleft();
+		case CenterAuto:
+			center();
 			break;
 
-		case CenterColorRightAuto:
-			centercolorright();
-			break;
+		//case CenterColorRightAuto:
+		//	centercolorright();
+		//	break;
 
 		case RightColorLeftAuto:
 			leftcolorright();
@@ -646,7 +749,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step1:
-                    long driveTime = getDashboardValue( TIME_TO_BASELINE_WIDGET, driveToBaseLineTime );
+			long driveTime = getDashboardValue( TIME_TO_BASELINE_WIDGET, driveToBaseLineTime );
 
 			driveForward(AUTO_SPEED, driveTime);
 			break;
@@ -666,33 +769,27 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step1:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_NEXT_TO_SWITCH_WIDGET, driveNextToSwitch );
+			driveTime = getDashboardValue( TIME_TO_DRIVE_NEXT_TO_SWITCH_WIDGET, driveNextToSwitch );
 
 			driveForward(AUTO_SPEED, driveTime );
 			break;
 
 		case Step2:
 			turnTo(0.10, 90);
-//			watchForReflectiveStrips = true;
+			//			watchForReflectiveStrips = true;
 			break;
 
-		case Step3:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_WIDGET, driveToSideOfSwitch );
-
-			driveForward(AUTO_SPEED, driveTime );
-			break;
-
-		case Step4: 
+		case Step3: 
 			liftcube();
 			pause(pauseBetweenLiftAndPush);
 			break;
 
-		case Step5:
-                    driveTime = 1000;
+		case Step4:
+			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_WIDGET, driveToSideOfSwitch );
 
 			driveForward(AUTO_SPEED, driveTime );
 			break;
-			
+
 		case Step6:
 			shootcube();
 			break;
@@ -704,7 +801,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		}
 	}
 
-	void centercolorleft() {
+	void center() {
 		long driveTime = 0;
 
 		switch (autoStep) {
@@ -712,17 +809,17 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step1:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_TO_FRONT_OF_SWITCH_WIDGET, driveToFrontOfSwitch );
+			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_FRONT_OF_SWITCH_WIDGET, driveToFrontOfSwitch );
 
 			driveForward(AUTO_SPEED, driveTime);
 			break;
 
-		case Step2:
+		/*case Step2:
 			turnTo(0.10, -90);
 			break;
 
 		case Step3:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_TO_CORNER_OF_SWITCH_WIDGET, driveToCornerOfSwitch );
+			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_CORNER_OF_SWITCH_WIDGET, driveToCornerOfSwitch );
 
 			driveForward(AUTO_SPEED, driveTime);
 			break;
@@ -732,8 +829,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step5:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET, driveNextToSwitchFromCorner );
-                    
+			driveTime = getDashboardValue( TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET, driveNextToSwitchFromCorner );
+
 			driveForward(AUTO_SPEED, driveTime);
 			break;
 
@@ -742,8 +839,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step7:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET, driveToSideOfSwitchFromCenter );
-                    
+			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET, driveToSideOfSwitchFromCenter );
+
 			driveForward(AUTO_SPEED, driveTime);
 			break;
 
@@ -751,25 +848,25 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			liftcube();
 			pause(pauseBetweenLiftAndPush);
 			break;
-			
+
 		case Step9:
-                    driveTime = 1000;
+			driveTime = 1000;
 
 			driveForward(AUTO_SPEED, driveTime );
 			break;
-			
+
 		case Step10:
 			shootcube();
 			break;
-			
+*/
 		case Stop:
-			default:
-				stop();
+		default:
+			stop();
 			break;
 		}
 	}
 
-	void centercolorright() {
+	/*void centercolorright() {
 		long driveTime = 0;
 
 		switch (autoStep) {
@@ -777,7 +874,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step1:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_TO_FRONT_OF_SWITCH_WIDGET, driveToFrontOfSwitch );
+			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_FRONT_OF_SWITCH_WIDGET, driveToFrontOfSwitch );
 
 			driveForward(AUTO_SPEED, driveTime);
 			break;
@@ -787,7 +884,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step3:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_TO_CORNER_OF_SWITCH_WIDGET, driveToCornerOfSwitch );
+			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_CORNER_OF_SWITCH_WIDGET, driveToCornerOfSwitch );
 
 			driveForward(AUTO_SPEED, driveTime);
 			break;
@@ -797,7 +894,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step5:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET, driveNextToSwitchFromCorner );
+			driveTime = getDashboardValue( TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET, driveNextToSwitchFromCorner );
 
 			driveForward(AUTO_SPEED, driveTime);
 			break;
@@ -807,7 +904,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step7:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET, driveToSideOfSwitchFromCenter );
+			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET, driveToSideOfSwitchFromCenter );
 
 			driveForward(AUTO_SPEED, driveTime);
 			break;
@@ -816,23 +913,23 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			liftcube();
 			pause(pauseBetweenLiftAndPush);
 			break;
-			
+
 		case Step9:
-                    driveTime = 1000;
+			driveTime = 1000;
 
 			driveForward(AUTO_SPEED, driveTime );
 			break;
-			
+
 		case Step10:
 			shootcube();
 			break;
-			
+
 		case Stop:
-			default:
-				stop();
+		default:
+			stop();
 			break;
 		}
-	}
+	}*/
 
 	void rightcolorright() {
 		long driveTime = 0;
@@ -842,33 +939,27 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step1:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_NEXT_TO_SWITCH_WIDGET, driveNextToSwitch );
+			driveTime = getDashboardValue( TIME_TO_DRIVE_NEXT_TO_SWITCH_WIDGET, driveNextToSwitch );
 
 			driveForward(AUTO_SPEED, driveTime );
 			break;
 
 		case Step2:
 			turnTo(0.10, -90);
-//			watchForReflectiveStrips = true;
+			//			watchForReflectiveStrips = true;
 			break;
 
-		case Step3:
-                    driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_WIDGET, driveToSideOfSwitch );
-
-			driveForward(AUTO_SPEED, driveTime );
-			break;
-
-		case Step4: 
+		case Step3: 
 			liftcube();
 			pause(pauseBetweenLiftAndPush);
 			break;
 
-		case Step5:
-                    driveTime = 1000;
+		case Step4:
+			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_WIDGET, driveToSideOfSwitch );
 
 			driveForward(AUTO_SPEED, driveTime );
 			break;
-			
+
 		case Step6:
 			shootcube();
 			break;
@@ -890,7 +981,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 		case Forward:
 			y = targetSpeed;
-//			t = rotateToAngleRate;
+			//			t = rotateToAngleRate;
 			break;
 
 		case Reverse:
@@ -909,7 +1000,11 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Turn:
-			t = rotateToAngleRate;
+			if( previousCorrection * rotateToAngleRate < 0.0 ) {
+				readyForOnTarget = true;
+			}
+			t = adjustForBaseLevel( rotateToAngleRate, baseTwistLevel );
+			previousCorrection = rotateToAngleRate;
 			break;
 
 		case Stopped:
@@ -917,38 +1012,18 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 		}
 
-		baseDriveLevel = SmartDashboard.getNumber("Base Drive Level ", 0);
-		baseTwistLevel = SmartDashboard.getNumber("Base Twist Level ", 0);
-
-		baseDriveLevel = Math.max( 0.0, baseDriveLevel );
-		baseDriveLevel = Math.min( 1.0, baseDriveLevel );
-
-		baseTwistLevel = Math.max( 0.0, baseTwistLevel );
-		baseTwistLevel = Math.min( 1.0, baseTwistLevel );
-
-		if (x < 0) {
-			x = ((1.0 - baseDriveLevel) * x) - baseDriveLevel;
-		} else if (x > 0) {
-			x = ((1.0 - baseDriveLevel) * x) + baseDriveLevel;
-		}
-
-		if (y < 0) {
-			y = ((1.0 - baseDriveLevel) * y) - baseDriveLevel;
-		} else if (y > 0) {
-			y = ((1.0 - baseDriveLevel) * y) + baseDriveLevel;
-		}
-
-		if (t < 0) {
-			t = ((1.0 - baseTwistLevel) * t) - baseTwistLevel;
-		} else if (t > 0) {
-			t = ((1.0 - baseTwistLevel) * t) + baseTwistLevel;
-		}
+		x = adjustForBaseLevel( x, baseDriveLevel );
+		y = adjustForBaseLevel( y, baseDriveLevel );
 
 		SmartDashboard.putNumber("X ", x);
 		SmartDashboard.putNumber("Y ", y);
 		SmartDashboard.putNumber("T ", t);
 
-		driveTrain.arcadeDrive(-y, t);
+		if( CompetitionRobot ) {
+			driveTrain.arcadeDrive(-y, t);
+		} else {
+			driveTrain.arcadeDrive(-y, -t);
+		}
 	}
 
 	void initializeForNextStep() {
@@ -958,7 +1033,9 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		targetTurningSpeed = 0;
 		watchForReflectiveStrips = false;
 		turnController.disable();
-                collisionDetected = false;
+		collisionDetected = false;
+		readyForOnTarget = false;
+		previousCorrection = 0.0;
 		initAutoStep = true;
 	}
 
@@ -969,8 +1046,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			targetSpeed = speed;
 			targetTime = getTargetTime(time);
 			targetAngle = currentAngle;
-//			turnController.setSetpoint(targetAngle);
-//			turnController.enable();		
+			//			turnController.setSetpoint(targetAngle);
+			//			turnController.enable();		
 		}
 	}
 
@@ -1086,33 +1163,58 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	void dropcube() {
 	}
 
-    long getDashboardValue( final String widget, long defaultValue ) {
+	long getDashboardValue( final String widget, long defaultValue ) {
 
-        long value;
+		long value;
 
-        try {
-            value = Long.parseLong(SmartDashboard.getString(widget, "bad"));
-        } catch (NumberFormatException e){
-            value =  defaultValue;
+		try {
+			value = Long.parseLong(SmartDashboard.getString(widget, "bad"));
+		} catch (NumberFormatException e){
+			value =  defaultValue;
+		}
+
+		return value;
+	}
+
+	double adjustForBaseLevel( double x, double baseLevel ) {
+		if (x < 0) {
+			x = ((1.0 - baseLevel) * x) - baseLevel;
+		} else if (x > 0) {
+			x = ((1.0 - baseLevel) * x) + baseLevel;
+		}
+
+		return x;
+	}
+
+    double adjustSensitivity( double x, double a, double b ) {
+        if(x >= 0) {
+            x = b + (1-b)*(a * Math.pow(x, 3) + (1-a)*x);
+        }
+        else {
+            x = -b + (1-b)*(a * Math.pow(x, 3) + (1-a)*x);
         }
 
-        return value;
+        return x;
     }
+    
+	void detectCollision() {
 
-    void detectCollision() {
+		double curr_world_linear_accel_x = ahrs.getWorldLinearAccelX();
+		double currentJerkX = curr_world_linear_accel_x - last_world_linear_accel_x;
+		last_world_linear_accel_x = curr_world_linear_accel_x;
+		double curr_world_linear_accel_y = ahrs.getWorldLinearAccelY();
+		double currentJerkY = curr_world_linear_accel_y - last_world_linear_accel_y;
+		last_world_linear_accel_y = curr_world_linear_accel_y;
 
-        double curr_world_linear_accel_x = ahrs.getWorldLinearAccelX();
-        double currentJerkX = curr_world_linear_accel_x - last_world_linear_accel_x;
-        last_world_linear_accel_x = curr_world_linear_accel_x;
-        double curr_world_linear_accel_y = ahrs.getWorldLinearAccelY();
-        double currentJerkY = curr_world_linear_accel_y - last_world_linear_accel_y;
-        last_world_linear_accel_y = curr_world_linear_accel_y;
-
-        if ( ( Math.abs(currentJerkX) > kCollisionThreshold_DeltaG ) ||
-             ( Math.abs(currentJerkY) > kCollisionThreshold_DeltaG) ) {
-            collisionDetected = true;
-        }
-    }
+                /*		if ( ( Math.abs(currentJerkX) > kCollisionThreshold_DeltaG ) ||
+				( Math.abs(currentJerkY) > kCollisionThreshold_DeltaG) ) {
+			collisionDetected = true;
+		}
+                */
+		if ( Math.abs(currentJerkY) > kCollisionThreshold_DeltaG ) {
+			collisionDetected = true;
+		}
+	}
 
 	/**
 	 * This function is called periodically during test mode.

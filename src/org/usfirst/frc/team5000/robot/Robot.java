@@ -111,8 +111,8 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 	static final String LeftColorRightAuto = "LCR";
 	static final String LeftColorLeftAuto = "LCL";
-	static final String CenterAuto = "C";
-	//static final String CenterColorRightAuto = "CCR";
+	static final String CenterColorLeftAuto = "C";
+	static final String CenterColorRightAuto = "CCR";
 	static final String RightColorLeftAuto = "RCL";
 	static final String RightColorRightAuto = "RCR";
 
@@ -123,7 +123,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	static final int forwardChannel2 = 2; //this is out
 	static final int reverseChannel2 = 1; //this is in
 	static final long delaybeforepush = 000;
-	static final long delaybeforeretract = 2500;
+	static final long delaybeforeretract = 0500;
 
 	static final long delaybeforedrop = 1000;
 	static final int droplift = 4;
@@ -152,7 +152,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	static final double FORWARD_LIFT_SPEED = -0.7;//change for actual robot
 	static final double REVERSE_LIFT_SPEED = 0.6;//change for actual robot
 
-	static final double ForwardWinchSpeed = -0.7;
+	static final double ForwardWinchSpeed = -1.0;
 	static final double ReverseWinchSpeed = 0.6;
 
 	static final double drivestopexception = 6;
@@ -170,14 +170,14 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	//static final String TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET = "Time to drive next to switch from corner ";
 	//static final String TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET = "Time to drive to side of switch from center ";
 
-    static final String KP_WIDGET = "kP ";
-    static final String KI_WIDGET = "kI ";
-    static final String KD_WIDGET = "kD ";
-    static final String KF_WIDGET = "kF ";
+	static final String KP_WIDGET = "kP ";
+	static final String KI_WIDGET = "kI ";
+	static final String KD_WIDGET = "kD ";
+	static final String KF_WIDGET = "kF ";
 
-    static final String BASE_DRIVE_LEVEL_WIDGET = "Base Drive Level ";
-    static final String BASE_TWIST_LEVEL_WIDGET = "Base Twist Level ";
-    
+	static final String BASE_DRIVE_LEVEL_WIDGET = "Base Drive Level ";
+	static final String BASE_TWIST_LEVEL_WIDGET = "Base Twist Level ";
+
 
 	// Variables
 	final String defaultAuto = "Default";
@@ -201,7 +201,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 	long driveToBaseLineTime = 5000;
 	long driveNextToSwitch = 3500;
 	long driveToSideOfSwitch = 750;
-	long driveToFrontOfSwitch = 3000;
+	long driveToFrontOfSwitch = 2500;
 	//long driveToCornerOfSwitch = 1000;
 	//long driveNextToSwitchFromCorner = 1000;
 	//long driveToSideOfSwitchFromCenter = 1000;
@@ -244,7 +244,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 
 	PIDController turnController;
 	double rotateToAngleRate;
-        boolean rotateToAngle = false;
+	boolean rotateToAngle = false;
 	double previousCorrection = 0.0;
 	boolean readyForOnTarget = false;
 
@@ -297,10 +297,10 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		pusher = new DoubleSolenoid(forwardChannel2, reverseChannel2);
 
 		if( CompetitionRobot ) {
-                    ahrs = new AHRS(SPI.Port.kMXP);
-                } else {
-                    ahrs = new AHRS(I2C.Port.kOnboard);
-                }
+			ahrs = new AHRS(SPI.Port.kMXP);
+		} else {
+			ahrs = new AHRS(I2C.Port.kOnboard);
+		}
 
 		turnController = new PIDController(kP, kI, kD, kF, ahrs, this /*, 0.02F */);
 		turnController.setInputRange(-180.0f,  180.0f);
@@ -389,10 +389,10 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		SmartDashboard.putNumber("PID rotateToAngleRate", rotateToAngleRate);
 
 		if( CompetitionRobot ) {
-			double A = (driveJoystick.getThrottle() + 1) / 2;
+			double A = driveJoystick.getThrottle();
 			double B = 0.2;
 			SmartDashboard.putNumber("Joystick Sensitivity A", A);
-			
+
 			double y = adjustSensitivity( driveJoystick.getY(), A, B );
 			double t = adjustSensitivity( driveJoystick.getTwist(), A, B );
 
@@ -471,7 +471,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 		case Close:
 			arms.set(DoubleSolenoid.Value.kReverse); //arms close
-			if (buttonsJoystickButtons.isPressed(armsopen)) {
+			if (buttonsJoystickButtons.isPressed(armsclose)) {
 				clawState = ClawState.SecondOpen;
 				firstdelay = System.currentTimeMillis() + delaybeforepush;
 			}
@@ -607,7 +607,9 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		System.out.println("Auto selected: " + autoSelected);
 
 		ahrs.reset();
-
+//		arms.set(DoubleSolenoid.Value.kReverse); // arms closed
+//		pusher.set(DoubleSolenoid.Value.kForward); //pusher retracted
+	
 		autoStep = AutoStep.Start;
 		SmartDashboard.putString("Auto Step ", autoStep.toString());
 
@@ -623,7 +625,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 					autoMode = LeftColorLeftAuto;
 					break;
 				case Center:
-					autoMode = CenterAuto;
+					autoMode = CenterColorLeftAuto;
 					break;
 				case Right:
 					autoMode = RightColorLeftAuto;
@@ -635,7 +637,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 					autoMode = LeftColorRightAuto;
 					break;
 				case Center:
-					autoMode = CenterAuto;
+					autoMode = CenterColorRightAuto;
 					break;
 				case Right:
 					autoMode = RightColorRightAuto;
@@ -722,13 +724,13 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			leftcolorleft();
 			break;
 
-		case CenterAuto:
-			center();
+		case CenterColorLeftAuto:
+			centercolorleft();
 			break;
 
-		//case CenterColorRightAuto:
-		//	centercolorright();
-		//	break;
+		case CenterColorRightAuto:
+			centercolorright();
+			break;
 
 		case RightColorLeftAuto:
 			leftcolorright();
@@ -801,7 +803,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		}
 	}
 
-	void center() {
+	void centercolorleft() {
 		long driveTime = 0;
 
 		switch (autoStep) {
@@ -814,51 +816,6 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			driveForward(AUTO_SPEED, driveTime);
 			break;
 
-		/*case Step2:
-			turnTo(0.10, -90);
-			break;
-
-		case Step3:
-			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_CORNER_OF_SWITCH_WIDGET, driveToCornerOfSwitch );
-
-			driveForward(AUTO_SPEED, driveTime);
-			break;
-
-		case Step4:
-			turnTo(0.10, 0);
-			break;
-
-		case Step5:
-			driveTime = getDashboardValue( TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET, driveNextToSwitchFromCorner );
-
-			driveForward(AUTO_SPEED, driveTime);
-			break;
-
-		case Step6:
-			turnTo(0.10, 90);
-			break;
-
-		case Step7:
-			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET, driveToSideOfSwitchFromCenter );
-
-			driveForward(AUTO_SPEED, driveTime);
-			break;
-
-		case Step8:
-			liftcube();
-			pause(pauseBetweenLiftAndPush);
-			break;
-
-		case Step9:
-			driveTime = 1000;
-
-			driveForward(AUTO_SPEED, driveTime );
-			break;
-
-		case Step10:
-			shootcube();
-			break;
-*/
 		case Stop:
 		default:
 			stop();
@@ -866,7 +823,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		}
 	}
 
-	/*void centercolorright() {
+	void centercolorright() {
 		long driveTime = 0;
 
 		switch (autoStep) {
@@ -880,47 +837,17 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			break;
 
 		case Step2:
-			turnTo(0.10, 90);
+			liftcube();
+			pause(pauseBetweenLiftAndPush);
 			break;
 
 		case Step3:
-			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_CORNER_OF_SWITCH_WIDGET, driveToCornerOfSwitch );
+			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_WIDGET, driveToSideOfSwitch );
 
 			driveForward(AUTO_SPEED, driveTime);
 			break;
 
 		case Step4:
-			turnTo(0.10, 0);
-			break;
-
-		case Step5:
-			driveTime = getDashboardValue( TIME_TO_DRIVE_NEXT_TO_SWITCH_FROM_CORNER_WIDGET, driveNextToSwitchFromCorner );
-
-			driveForward(AUTO_SPEED, driveTime);
-			break;
-
-		case Step6:
-			turnTo(0.10, -90);
-			break;
-
-		case Step7:
-			driveTime = getDashboardValue( TIME_TO_DRIVE_TO_SIDE_OF_SWITCH_FROM_CENTER_WIDGET, driveToSideOfSwitchFromCenter );
-
-			driveForward(AUTO_SPEED, driveTime);
-			break;
-
-		case Step8:
-			liftcube();
-			pause(pauseBetweenLiftAndPush);
-			break;
-
-		case Step9:
-			driveTime = 1000;
-
-			driveForward(AUTO_SPEED, driveTime );
-			break;
-
-		case Step10:
 			shootcube();
 			break;
 
@@ -929,7 +856,7 @@ public class Robot extends IterativeRobot implements PIDOutput {
 			stop();
 			break;
 		}
-	}*/
+	}
 
 	void rightcolorright() {
 		long driveTime = 0;
@@ -1186,17 +1113,17 @@ public class Robot extends IterativeRobot implements PIDOutput {
 		return x;
 	}
 
-    double adjustSensitivity( double x, double a, double b ) {
-        if(x >= 0) {
-            x = b + (1-b)*(a * Math.pow(x, 3) + (1-a)*x);
-        }
-        else {
-            x = -b + (1-b)*(a * Math.pow(x, 3) + (1-a)*x);
-        }
+	double adjustSensitivity( double x, double a, double b ) {
+		if(x >= 0) {
+			x = b + (1-b)*(a * Math.pow(x, 3) + (1-a)*x);
+		}
+		else {
+			x = -b + (1-b)*(a * Math.pow(x, 3) + (1-a)*x);
+		}
 
-        return x;
-    }
-    
+		return x;
+	}
+
 	void detectCollision() {
 
 		double curr_world_linear_accel_x = ahrs.getWorldLinearAccelX();
